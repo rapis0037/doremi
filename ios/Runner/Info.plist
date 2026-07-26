@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>AR 톡톡 모드에서 카메라 화면 위에 악보와 건반을 겹쳐 보여주기 위해 카메라를 사용합니다. 사진이나 영상을 저장하거나 전송하지 않습니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
