@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "88743352145",
+    "project_id": "doremi-496ea",
+    "storage_bucket": "doremi-496ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:88743352145:android:c46cb2640236023c63a570",
+        "android_client_info": {
+          "package_name": "com.cheesetabby.doremi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "88743352145-f5lsmcr7lvb1d4jo5peudsaknkv6u45h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cheesetabby.doremi",
+            "certificate_hash": "6a93b64885859d943724f5017b3bc904759c1758"
+          }
+        },
+        {
+          "client_id": "88743352145-nj6lultqg03coo0pq36vqhcq6v8esoh8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cheesetabby.doremi",
+            "certificate_hash": "ac002f0e963ee50384bd3d4943df368d315e9471"
+          }
+        },
+        {
+          "client_id": "88743352145-4i4pgunu1savmol5rsukp68pmbne2etl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBppK2Gp-wKi6VCR2KN7wkAanSjGq-lGbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "88743352145-4i4pgunu1savmol5rsukp68pmbne2etl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "88743352145-t5iut41thg2als1tk47378u26mrg52lk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cheesetabby.doremi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

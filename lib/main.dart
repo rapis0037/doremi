@@ -1,18 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'auth/auth_gateway.dart';
+import 'auth/auth_models.dart';
+import 'auth/onboarding_repository.dart';
 import 'core/models.dart';
+import 'firebase_options.dart';
 import 'pages/ar_mode_page.dart';
 import 'pages/home_page.dart';
 import 'pages/lesson_flow_page.dart';
+import 'pages/signup_flow_page.dart';
+import 'pages/sensory_setup_page.dart';
 import 'pages/stage_three_flow_page.dart';
+import 'widgets/responsive_viewport.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MusicMvpApp());
+  final preferences = await SharedPreferences.getInstance();
+  late final AuthGateway authGateway;
+  OnboardingRepository? onboardingRepository;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    authGateway = FirebaseAuthGateway();
+    onboardingRepository = FirebaseOnboardingRepository();
+  } catch (_) {
+    authGateway = const UnavailableAuthGateway(
+      '로그인 서비스 연결이 완료되지 않았어요. Firebase 앱 설정을 확인해 주세요.',
+    );
+  }
+  runApp(
+    MusicMvpApp(
+      preferences: preferences,
+      authGateway: authGateway,
+      onboardingRepository: onboardingRepository,
+    ),
+  );
 }
 
 class MusicMvpApp extends StatelessWidget {
-  const MusicMvpApp({super.key});
+  const MusicMvpApp({
+    super.key,
+    this.preferences,
+    this.authGateway,
+    this.onboardingRepository,
+  });
+
+  final SharedPreferences? preferences;
+  final AuthGateway? authGateway;
+  final OnboardingRepository? onboardingRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +58,67 @@ class MusicMvpApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: '너두! 도레미!',
       theme: ThemeData(
+        fontFamily: 'NanumGothic',
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffed4f7f)),
         useMaterial3: true,
       ),
-      home: const MusicLearningPage(),
+      // 페이지뿐 아니라 다이얼로그·스낵바까지 같은 배율을 적용하기 위해
+      // Navigator 바깥이 아닌 builder 단계에서 감싼다.
+      builder: (context, child) =>
+          ResponsiveViewport(child: child ?? const SizedBox.shrink()),
+      home: authGateway == null
+          ? MusicLearningPage(preferences: preferences)
+          : _AuthenticatedEntry(
+              preferences: preferences,
+              authGateway: authGateway!,
+              onboardingRepository: onboardingRepository,
+            ),
+    );
+  }
+}
+
+class _AuthenticatedEntry extends StatefulWidget {
+  const _AuthenticatedEntry({
+    required this.preferences,
+    required this.authGateway,
+    required this.onboardingRepository,
+  });
+
+  final SharedPreferences? preferences;
+  final AuthGateway authGateway;
+  final OnboardingRepository? onboardingRepository;
+
+  @override
+  State<_AuthenticatedEntry> createState() => _AuthenticatedEntryState();
+}
+
+class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
+  bool _onboardingComplete = false;
+
+  void _finishOnboarding(LearningSettings settings) {
+    widget.preferences?.setBool('voice_on', settings.solfegeVoiceEnabled);
+    widget.preferences?.setBool('sparkles_on', settings.sparkleEnabled);
+    widget.preferences?.setBool('sensory_setup_complete', true);
+    if (mounted) setState(() => _onboardingComplete = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_onboardingComplete) {
+      return MusicLearningPage(preferences: widget.preferences);
+    }
+    return SignupFlowPage(
+      authGateway: widget.authGateway,
+      onboardingRepository: widget.onboardingRepository,
+      onCompleted: _finishOnboarding,
     );
   }
 }
 
 class MusicLearningPage extends StatefulWidget {
-  const MusicLearningPage({super.key});
+  const MusicLearningPage({super.key, this.preferences});
+
+  final SharedPreferences? preferences;
 
   @override
   State<MusicLearningPage> createState() => _MusicLearningPageState();
@@ -37,46 +126,112 @@ class MusicLearningPage extends StatefulWidget {
 
 class _MusicLearningPageState extends State<MusicLearningPage> {
   RootPage _page = RootPage.home;
-  bool _soundOn = true;
+  late bool _voiceOn;
+  late bool _sparklesOn;
+  late bool _needsSensorySetup;
+
+  @override
+  void initState() {
+    super.initState();
+    _voiceOn = widget.preferences?.getBool('voice_on') ?? false;
+    _sparklesOn = widget.preferences?.getBool('sparkles_on') ?? false;
+    _needsSensorySetup =
+        widget.preferences != null &&
+        !(widget.preferences!.getBool('sensory_setup_complete') ?? false);
+  }
 
   void _open(RootPage next) => setState(() => _page = next);
-  void _setSound(bool value) => setState(() => _soundOn = value);
+  void _setVoice(bool value) {
+    setState(() => _voiceOn = value);
+    widget.preferences?.setBool('voice_on', value);
+  }
+
+  void _setSparkles(bool value) {
+    setState(() => _sparklesOn = value);
+    widget.preferences?.setBool('sparkles_on', value);
+  }
+
+  void _finishSensorySetup(SensoryChoice choice) {
+    setState(() {
+      _voiceOn = choice.voiceOn;
+      _sparklesOn = choice.sparklesOn;
+      _needsSensorySetup = false;
+    });
+    widget.preferences?.setBool('voice_on', choice.voiceOn);
+    widget.preferences?.setBool('sparkles_on', choice.sparklesOn);
+    widget.preferences?.setBool('sensory_setup_complete', true);
+  }
+
+  void _handleSystemBack() {
+    if (_page == RootPage.arLite) {
+      _open(RootPage.arModes);
+    } else if (_page != RootPage.home) {
+      _open(RootPage.home);
+    }
+  }
+
+  Widget _withSystemBackHandler(Widget child) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _handleSystemBack();
+    },
+    child: child,
+  );
 
   @override
   Widget build(BuildContext context) {
+    if (_needsSensorySetup) {
+      return _withSystemBackHandler(
+        SensorySetupPage(onSelected: _finishSensorySetup),
+      );
+    }
     switch (_page) {
       case RootPage.home:
-        return HomePage(
-          onStageOne: () => _open(RootPage.stageOne),
-          onStageTwo: () => _open(RootPage.arModes),
-          onStageThree: () => _open(RootPage.stageThree),
+        return _withSystemBackHandler(
+          HomePage(
+            onStageOne: () => _open(RootPage.stageOne),
+            onStageTwo: () => _open(RootPage.arModes),
+            onStageThree: () => _open(RootPage.stageThree),
+          ),
         );
       case RootPage.stageOne:
-        return LessonFlowPage(
-          cameraMode: false,
-          soundOn: _soundOn,
-          onSoundChanged: _setSound,
-          onExit: () => _open(RootPage.home),
+        return _withSystemBackHandler(
+          LessonFlowPage(
+            cameraMode: false,
+            soundOn: _voiceOn,
+            onSoundChanged: _setVoice,
+            sparklesOn: _sparklesOn,
+            onSparklesChanged: _setSparkles,
+            onExit: () => _open(RootPage.home),
+          ),
         );
       case RootPage.arModes:
-        return ArModePage(
-          soundOn: _soundOn,
-          onSoundChanged: _setSound,
-          onBack: () => _open(RootPage.home),
-          onLite: () => _open(RootPage.arLite),
+        return _withSystemBackHandler(
+          ArModePage(
+            soundOn: _voiceOn,
+            onSoundChanged: _setVoice,
+            onBack: () => _open(RootPage.home),
+            onLite: () => _open(RootPage.arLite),
+          ),
         );
       case RootPage.arLite:
-        return LessonFlowPage(
-          cameraMode: true,
-          soundOn: _soundOn,
-          onSoundChanged: _setSound,
-          onExit: () => _open(RootPage.arModes),
+        return _withSystemBackHandler(
+          LessonFlowPage(
+            cameraMode: true,
+            soundOn: _voiceOn,
+            onSoundChanged: _setVoice,
+            sparklesOn: _sparklesOn,
+            onSparklesChanged: _setSparkles,
+            onExit: () => _open(RootPage.arModes),
+          ),
         );
       case RootPage.stageThree:
-        return StageThreeFlowPage(
-          soundOn: _soundOn,
-          onSoundChanged: _setSound,
-          onExit: () => _open(RootPage.home),
+        return _withSystemBackHandler(
+          StageThreeFlowPage(
+            soundOn: _voiceOn,
+            onSoundChanged: _setVoice,
+            onExit: () => _open(RootPage.home),
+          ),
         );
     }
   }

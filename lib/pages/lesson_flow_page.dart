@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -7,10 +6,11 @@ import 'package:flutter/material.dart';
 import '../audio/tone_player.dart';
 import '../core/constants.dart';
 import '../core/models.dart';
-import '../layout/keyboard_layout.dart';
+import '../layout/lesson_scene.dart';
 import '../painters/lesson_painter.dart';
 import '../widgets/scene_view.dart';
 import '../widgets/stage_shell.dart';
+import '../widgets/step_card.dart';
 
 class LessonFlowPage extends StatefulWidget {
   const LessonFlowPage({
@@ -18,11 +18,15 @@ class LessonFlowPage extends StatefulWidget {
     required this.cameraMode,
     required this.soundOn,
     required this.onSoundChanged,
+    required this.sparklesOn,
+    required this.onSparklesChanged,
     required this.onExit,
   });
   final bool cameraMode;
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
+  final bool sparklesOn;
+  final ValueChanged<bool> onSparklesChanged;
   final VoidCallback onExit;
 
   @override
@@ -46,21 +50,33 @@ class _LessonFlowPageState extends State<LessonFlowPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    flight = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed && mounted) {
-          setState(() => landed = true);
-          burst.forward(from: 0);
-          popupTimer?.cancel();
-          popupTimer = Timer(const Duration(seconds: 2), () {
-            if (!mounted || !landed) return;
-            setState(() => showPopup = true);
-            popup.forward(from: 0);
+    tone.preload();
+    flight =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() => landed = true);
+              // 오선지에 안착한 순간 계이름을 불러 준다. 건반을 누를 때 울린
+              // 피아노 음은 아직 남아 있고, 그 위로 음성이 얹힌다.
+              final note = selected;
+              if (widget.soundOn && note != null) tone.playVoice(note);
+              burst.forward(from: 0);
+              popupTimer?.cancel();
+              popupTimer = Timer(const Duration(seconds: 2), () {
+                if (!mounted || !landed) return;
+                setState(() => showPopup = true);
+                popup.forward(from: 0);
+              });
+            }
           });
-        }
-      });
-    burst = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150));
-    popup = AnimationController(vsync: this, duration: const Duration(milliseconds: 360));
+    burst = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1150),
+    );
+    popup = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
     if (widget.cameraMode) _initializeCamera();
   }
 
@@ -72,7 +88,11 @@ class _LessonFlowPageState extends State<LessonFlowPage>
         (item) => item.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      final controller = CameraController(back, ResolutionPreset.medium, enableAudio: false);
+      final controller = CameraController(
+        back,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
       await controller.initialize();
       if (!mounted) {
         await controller.dispose();
@@ -138,42 +158,30 @@ class _LessonFlowPageState extends State<LessonFlowPage>
     setState(() {});
   }
 
-  KeyboardLayout get _keyboard => KeyboardLayout(
-        y: selected == null ? 320 : (widget.cameraMode ? 650 : 625),
-        height: selected == null ? 280 : (widget.cameraMode ? 252 : 280),
-        count: selected != null && selected!.index < 5 ? 5 : 8,
-      );
-
-  Offset _keyCenter(int index) => _keyboard.iconCenter(index);
-
-  Offset _noteTarget(NoteSpec note) {
-    const staffY = 92.0;
-    const gap = 28.0;
-    return Offset(420, staffY + gap * 5 - note.pitchStep * gap / 2);
-  }
-
-  Offset _flightPoint(double t) {
-    final start = _keyCenter(selected!.index);
-    final end = _noteTarget(selected!);
-    return Offset(
-      start.dx + (end.dx - start.dx) * t + 170 * math.sin(t * math.pi * 4),
-      start.dy + (end.dy - start.dy) * t + 125 * math.sin(t * math.pi * 2),
-    );
-  }
+  /// 화면 방향에 맞는 장면 좌표계. 그리기와 탭 판정이 같은 값을 써야 한다.
+  LessonScene get _scene => LessonScene.of(
+    landscape: MediaQuery.of(context).orientation == Orientation.landscape,
+    selected: selected,
+    cameraMode: widget.cameraMode,
+  );
 
   void _onSceneTap(Offset point) {
+    final scene = _scene;
     if (showPopup) {
-      if ((point - const Offset(400, 460)).distance < 130) _reset();
+      // 팝업 원 안 아무 데나 누르면 초기화된다.
+      if ((point - scene.popupCenter).distance < scene.popupRadius) _reset();
       return;
     }
     if (selected == null) {
-      final index = _keyboard.hitWhiteKey(point);
+      final index = scene.keyboard.hitWhiteKey(point);
       if (index != null) _choose(notes[index]);
       return;
     }
     if (flight.isAnimating || landed) return;
-    if ((point - _keyCenter(selected!.index)).distance < 62) {
-      if (widget.soundOn) tone.playNote(selected!.frequency, durationSeconds: 2);
+    // 도형만이 아니라 해당 음의 건반 전체가 탭 영역이다. 건반 선택 화면과
+    // 같은 판정을 써서 검은 건반은 자연스럽게 제외된다.
+    if (scene.keyboard.hitWhiteKey(point) == selected!.index) {
+      tone.playNote(selected!);
       flight.forward(from: 0);
     }
   }
@@ -181,34 +189,68 @@ class _LessonFlowPageState extends State<LessonFlowPage>
   @override
   Widget build(BuildContext context) {
     final noSelection = selected == null;
+    final screenSize = MediaQuery.sizeOf(context);
+    final wide = screenSize.width > screenSize.height;
+    const notePickingTitleOffsetY = 150.0;
+    const pitchPracticeTitleOffsetY = 70.0;
+    const liteMenuTitleOffsetY = 150.0;
+    const litePracticeTitleOffsetY = pitchPracticeTitleOffsetY;
+    final cameraPractice = widget.cameraMode && !noSelection;
+    final headerContentOffsetY = wide
+        ? 0.0
+        : widget.cameraMode
+        ? (noSelection ? liteMenuTitleOffsetY : litePracticeTitleOffsetY)
+        : (noSelection ? notePickingTitleOffsetY : pitchPracticeTitleOffsetY);
     final title = widget.cameraMode
-        ? noSelection ? '톡톡 Lite' : '${selected!.label} AR 음정 연습'
-        : noSelection ? '톡톡! 한 음 익히기' : '${selected!.label} 음정 연습';
+        ? noSelection
+              ? '톡톡 Lite'
+              : '${selected!.label} AR 음정 연습'
+        : noSelection
+        ? '톡톡! 한 음 익히기'
+        : '${selected!.label} 음정 연습';
     final subtitle = noSelection ? '건반에서 연습할 음을 골라보세요' : '도형을 눌러 악보까지 따라가 보세요';
-    final kb = _keyboard;
+    final scene = _scene;
     return StageShell(
       title: title,
       subtitle: subtitle,
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
+      sparklesOn: widget.sparklesOn,
+      onSparklesChanged: widget.onSparklesChanged,
       onBack: _goBack,
-      child: Center(
+      headerHeight: wide ? 68 : StepCard.height,
+      headerContentScale: wide ? 1 : 1.3,
+      headerContentOffsetY: headerContentOffsetY,
+      headerContentWidthScale: cameraPractice ? 1.22 : 1,
+      headerTitleColor: widget.cameraMode
+          ? const Color(0xffffe7a3)
+          : const Color(0xff252a2e),
+      headerSubtitleColor: widget.cameraMode
+          ? const Color(0xffffe7a3)
+          : const Color(0xff687582),
+      headerIconColor: widget.cameraMode ? const Color(0xff73e76d) : null,
+      headerSubtitleScale: widget.cameraMode && noSelection ? 1.25 : 1,
+      // 카메라는 씬 박스가 아니라 화면 전체를 채우고, 건반·악보 오버레이가
+      // 그 위에 올라간다.
+      backdrop: widget.cameraMode ? _buildCamera() : null,
+      child: Align(
+        alignment: Alignment.center,
         child: AnimatedBuilder(
           animation: Listenable.merge([flight, burst, popup]),
           builder: (context, _) => SceneView(
             onTap: _onSceneTap,
-            background: widget.cameraMode ? _buildCamera() : null,
+            scene: scene.size,
             painter: LessonPainter(
               selected: selected,
               cameraMode: widget.cameraMode,
-              keyboard: kb,
+              sparklesOn: widget.sparklesOn,
+              scene: scene,
               flightProgress: flight.value,
               isFlying: flight.isAnimating,
               landed: landed,
               burstProgress: burst.value,
               showPopup: showPopup,
               popupProgress: popup.value,
-              flightPoint: selected == null ? null : _flightPoint(flight.value),
             ),
           ),
         ),
@@ -217,13 +259,31 @@ class _LessonFlowPageState extends State<LessonFlowPage>
   }
 
   Widget _buildCamera() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _cameraLayer(),
+        // 건반·악보가 잘 보이도록 카메라 전체를 아주 옅게 눌러 준다.
+        ColoredBox(color: Colors.black.withValues(alpha: .12)),
+      ],
+    );
+  }
+
+  Widget _cameraLayer() {
     if (camera != null && camera!.value.isInitialized) {
-      final size = camera!.value.previewSize!;
+      // previewSize는 센서 기준(가로)이라 화면 방향에 맞춰 축을 바꿔 준다.
+      final preview = camera!.value.previewSize!;
+      final portrait =
+          MediaQuery.of(context).orientation == Orientation.portrait;
       return ClipRect(
         child: SizedBox.expand(
           child: FittedBox(
             fit: BoxFit.cover,
-            child: SizedBox(width: size.height, height: size.width, child: CameraPreview(camera!)),
+            child: SizedBox(
+              width: portrait ? preview.height : preview.width,
+              height: portrait ? preview.width : preview.height,
+              child: CameraPreview(camera!),
+            ),
           ),
         ),
       );
@@ -234,11 +294,18 @@ class _LessonFlowPageState extends State<LessonFlowPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.camera_alt_outlined, color: Colors.white70, size: 54),
+          const Icon(
+            Icons.camera_alt_outlined,
+            color: Colors.white70,
+            size: 54,
+          ),
           const SizedBox(height: 12),
           Text(
             cameraError ?? '카메라를 준비하고 있어요',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

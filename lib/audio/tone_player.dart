@@ -1,64 +1,41 @@
-import 'dart:math' as math;
-import 'dart:typed_data';
-
 import 'package:audioplayers/audioplayers.dart';
 
-class TonePlayer {
-  final AudioPlayer _player = AudioPlayer();
-  final Map<String, Uint8List> _cache = {};
+import '../core/constants.dart';
+import '../core/models.dart';
 
-  Future<void> playNote(double frequency, {required double durationSeconds}) async {
-    final key = '${frequency.toStringAsFixed(2)}-$durationSeconds';
-    final bytes = _cache.putIfAbsent(key, () => _createWav(frequency, durationSeconds));
-    await _player.stop();
-    await _player.play(BytesSource(bytes));
+/// 건반 음원(피아노)과 계이름 음성을 재생한다.
+///
+/// 두 소리는 겹쳐 들려야 한다 — 건반을 누르면 피아노 음이 울리는 채로 음표가
+/// 날아가고, 오선지에 안착한 뒤 그 위로 "도!" 하고 음성이 얹힌다. 한 플레이어로
+/// 둘 다 재생하면 음성이 피아노 음을 끊어 버리므로 채널을 나눠 둔다.
+class TonePlayer {
+  final AudioPlayer _note = AudioPlayer();
+  final AudioPlayer _voice = AudioPlayer();
+
+  /// 첫 탭이 지연되지 않도록 음원을 미리 디코딩해 둔다.
+  Future<void> preload() async {
+    try {
+      await AudioCache.instance.loadAll({
+        for (final note in notes) ...[note.noteAsset, note.voiceAsset],
+      }.toList());
+    } catch (_) {
+      // 미리 불러오지 못해도 재생 시점에 다시 읽으므로 무시한다.
+    }
   }
 
-  Future<void> dispose() => _player.dispose();
+  Future<void> playNote(NoteSpec note) => _play(_note, note.noteAsset);
 
-  Uint8List _createWav(double frequency, double seconds) {
-    const sampleRate = 22050;
-    final sampleCount = (sampleRate * seconds).round();
-    final dataSize = sampleCount * 2;
-    final bytes = ByteData(44 + dataSize);
+  Future<void> playVoice(NoteSpec note) => _play(_voice, note.voiceAsset, volume: .5);
 
-    void text(int offset, String value) {
-      for (var i = 0; i < value.length; i++) {
-        bytes.setUint8(offset + i, value.codeUnitAt(i));
-      }
-    }
+  /// 같은 채널의 이전 소리는 끊는다. 건반을 연달아 누르면 앞 음이 물리지 않는다.
+  Future<void> _play(AudioPlayer player, String asset, {double volume = 1}) async {
+    await player.stop();
+    await player.setVolume(volume);
+    await player.play(AssetSource(asset));
+  }
 
-    text(0, 'RIFF');
-    bytes.setUint32(4, 36 + dataSize, Endian.little);
-    text(8, 'WAVE');
-    text(12, 'fmt ');
-    bytes.setUint32(16, 16, Endian.little);
-    bytes.setUint16(20, 1, Endian.little);
-    bytes.setUint16(22, 1, Endian.little);
-    bytes.setUint32(24, sampleRate, Endian.little);
-    bytes.setUint32(28, sampleRate * 2, Endian.little);
-    bytes.setUint16(32, 2, Endian.little);
-    bytes.setUint16(34, 16, Endian.little);
-    text(36, 'data');
-    bytes.setUint32(40, dataSize, Endian.little);
-
-    for (var i = 0; i < sampleCount; i++) {
-      final t = i / sampleRate;
-      final attack = math.min(1.0, t / .035);
-      final release = math.min(1.0, (seconds - t) / .18).clamp(0.0, 1.0).toDouble();
-      final envelope = attack * release * math.exp(-.38 * t);
-      final sample = (
-            math.sin(2 * math.pi * frequency * t) * .68 +
-            math.sin(2 * math.pi * frequency * 2 * t) * .19 +
-            math.sin(2 * math.pi * frequency * 3 * t) * .08
-          ) *
-          envelope;
-      bytes.setInt16(
-        44 + i * 2,
-        (sample * 27000).round().clamp(-32768, 32767).toInt(),
-        Endian.little,
-      );
-    }
-    return bytes.buffer.asUint8List();
+  Future<void> dispose() async {
+    await _note.dispose();
+    await _voice.dispose();
   }
 }

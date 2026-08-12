@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../core/constants.dart';
 import 'canvas_utils.dart';
 import 'effect_drawing.dart';
 
-void drawStaff(Canvas canvas, {required double y, bool translucentCard = false}) {
-  const x = 62.0;
-  const width = 676.0;
-  const gap = 28.0;
+/// 오선 한 칸 간격의 기준값. 세로 크기가 모두 여기에 비례한다.
+const double baseStaffGap = 28;
+
+void drawStaff(
+  Canvas canvas, {
+  required double y,
+  double x = 62,
+  double width = 676,
+  double scale = 1,
+  bool translucentCard = false,
+}) {
+  final gap = baseStaffGap * scale;
   if (translucentCard) {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(36, y - 42, 728, gap * 4 + 84),
-        const Radius.circular(8),
+        Rect.fromLTWH(
+          x - 28 * scale,
+          0,
+          width + 52 * scale,
+          y + gap * 4 + 42 * scale,
+        ),
+        Radius.circular(8 * scale),
       ),
       Paint()..color = Colors.white.withValues(alpha: .88),
     );
@@ -22,7 +34,7 @@ void drawStaff(Canvas canvas, {required double y, bool translucentCard = false})
       Offset(x, y + i * gap),
       Offset(x + width, y + i * gap),
       Paint()
-        ..strokeWidth = 3
+        ..strokeWidth = 3 * scale
         ..strokeCap = StrokeCap.round
         ..color = const Color(0xff454b50),
     );
@@ -30,16 +42,16 @@ void drawStaff(Canvas canvas, {required double y, bool translucentCard = false})
   drawCenteredText(
     canvas,
     '𝄞',
-    Offset(126, y + gap * 2),
-    fontSize: 104,
+    Offset(x + 64 * scale, y + gap * 2),
+    fontSize: 104 * scale,
     color: const Color(0xff353a3e),
     weight: FontWeight.w400,
   );
   canvas.drawLine(
-    Offset(738, y),
-    Offset(738, y + gap * 4),
+    Offset(x + width, y),
+    Offset(x + width, y + gap * 4),
     Paint()
-      ..strokeWidth = 4
+      ..strokeWidth = 4 * scale
       ..color = const Color(0xff454b50),
   );
 }
@@ -51,7 +63,7 @@ void drawChallengeScore(Canvas canvas, int active, bool done) {
   const quarterX = [250.0, 340.0, 430.0, 520.0];
   final cY = y + gap * 5;
   for (var i = 0; i < quarterX.length; i++) {
-    final color = !done && active == i ? notes.first.color : const Color(0xff30353a);
+    const color = Color(0xff30353a);
     drawMusicNote(canvas, Offset(quarterX[i], cY), color, .9);
   }
   canvas.drawLine(
@@ -61,7 +73,7 @@ void drawChallengeScore(Canvas canvas, int active, bool done) {
       ..strokeWidth = 3
       ..color = const Color(0xff454b50),
   );
-  final wholeColor = !done && active == 4 ? notes.first.color : const Color(0xff30353a);
+  const wholeColor = Color(0xff30353a);
   canvas.save();
   canvas.translate(684, cY);
   canvas.rotate(-.24);

@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /guardians/{guardianId} {
+      allow read, create, update: if request.auth != null
+        && request.auth.uid == guardianId;
+      allow delete: if false;
+    }
+  }
+}

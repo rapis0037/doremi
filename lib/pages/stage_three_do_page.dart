@@ -32,7 +32,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
   late final AnimationController _confetti;
   late final AnimationController _performance;
   late final AnimationController _popup;
-  final _keyboard = const KeyboardLayout(y: 24, height: 280, count: 5);
+  final _keyboard = const KeyboardLayout(y: 24, height: 420, count: 5);
   Offset _heart = _home;
   Offset _returnStart = _home;
   bool _dragging = false;
@@ -47,6 +47,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
   @override
   void initState() {
     super.initState();
+    tone.preload();
     _returnCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420))
       ..addListener(() {
           setState(() {
@@ -79,9 +80,9 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
     final index = elapsed < 2400 ? (elapsed ~/ 600).clamp(0, 3).toInt() : 4;
     if (index != _lastPlayed) {
       _lastPlayed = index;
-      if (widget.soundOn) {
-        tone.playNote(notes.first.frequency, durationSeconds: index == 4 ? 2.4 : .56);
-      }
+      // 600ms마다 다시 울리며 앞 음을 끊으므로 앞 네 번은 짧게, 마지막 한 번만
+      // 길게 남는다.
+      tone.playNote(notes.first);
     }
     setState(() => _activeNote = index);
   }

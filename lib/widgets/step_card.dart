@@ -18,6 +18,12 @@ class StepCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
+  /// 카드 한 칸 높이. 홈 화면의 세로 배치 단위이기도 하다.
+  static const double height = 116;
+
+  /// 카드 사이 간격.
+  static const double gap = 12;
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -28,20 +34,37 @@ class StepCard extends StatelessWidget {
         onTap: onTap,
         child: SizedBox(
           width: double.infinity,
-          height: 106,
+          height: height,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(width: 56, height: 56, child: CustomPaint(painter: RestPainter(kind))),
-              const SizedBox(width: 18),
               SizedBox(
-                width: 210,
+                width: 68,
+                height: 68,
+                child: CustomPaint(painter: RestPainter(kind)),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 260,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(number, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                    Text(
+                      number,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ],
                 ),
               ),

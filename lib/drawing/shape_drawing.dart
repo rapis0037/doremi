@@ -4,6 +4,29 @@ import 'package:flutter/material.dart';
 
 import '../core/models.dart';
 
+/// [drawShape]가 실제로 차지하는 가로 폭 / size 비율.
+///
+/// 하트만 유독 옆으로 넓어서, 자리에 맞춰 크기를 정할 때 이 값을 나눠 줘야
+/// 검은 건반 밑으로 삐져나가지 않는다.
+double shapeWidthFactor(NoteShape shape) {
+  switch (shape) {
+    case NoteShape.heart:
+      return 1.16;
+    case NoteShape.circle:
+      return 0.86;
+    case NoteShape.star:
+      return 0.96;
+    case NoteShape.triangle:
+      return 0.92;
+    case NoteShape.apple:
+      return 0.92;
+    case NoteShape.flower:
+      return 1.0;
+    case NoteShape.cloud:
+      return 0.98;
+  }
+}
+
 void drawShape(Canvas canvas, NoteShape shape, Offset center, double size, Color color) {
   final paint = Paint()..color = color;
   switch (shape) {

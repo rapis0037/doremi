@@ -9,21 +9,23 @@ class SceneView extends StatelessWidget {
     super.key,
     required this.painter,
     required this.onTap,
-    this.background,
+    this.scene = sceneSize,
     this.onPanStart,
     this.onPanUpdate,
     this.onPanEnd,
   });
   final CustomPainter painter;
-  final Widget? background;
   final ValueChanged<Offset> onTap;
+
+  /// 그림이 그려지는 좌표계 크기. 화면은 이 비율을 유지한 채 채워진다.
+  final Size scene;
   final ValueChanged<Offset>? onPanStart;
   final ValueChanged<Offset>? onPanUpdate;
   final VoidCallback? onPanEnd;
 
   Offset _logical(Offset point, Size size) => Offset(
-        point.dx * sceneSize.width / size.width,
-        point.dy * sceneSize.height / size.height,
+        point.dx * scene.width / size.width,
+        point.dy * scene.height / size.height,
       );
 
   @override
@@ -32,9 +34,9 @@ class SceneView extends StatelessWidget {
       builder: (context, constraints) {
         final width = math.min(
           constraints.maxWidth,
-          constraints.maxHeight * sceneSize.width / sceneSize.height,
+          constraints.maxHeight * scene.width / scene.height,
         );
-        final height = width * sceneSize.height / sceneSize.width;
+        final height = width * scene.height / scene.width;
         final size = Size(width, height);
         return SizedBox(
           width: width,
@@ -51,13 +53,7 @@ class SceneView extends StatelessWidget {
                   ? null
                   : (details) => onPanUpdate!(_logical(details.localPosition, size)),
               onPanEnd: onPanEnd == null ? null : (_) => onPanEnd!(),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ?background,
-                  CustomPaint(painter: painter),
-                ],
-              ),
+              child: CustomPaint(size: size, painter: painter),
             ),
           ),
         );

@@ -8,6 +8,8 @@ class RestPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 56, size.height / 56);
     final paint = Paint()..color = const Color(0xff41474c);
     switch (kind) {
       case RestKind.half:
@@ -45,6 +47,7 @@ class RestPainter extends CustomPainter {
         canvas.drawRect(Rect.fromLTWH(12, 21, 32, 11), paint);
         break;
     }
+    canvas.restore();
   }
 
   @override

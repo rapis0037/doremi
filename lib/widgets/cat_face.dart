@@ -3,11 +3,28 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class CatFace extends StatelessWidget {
-  const CatFace({super.key});
+  const CatFace({super.key, this.width = _designWidth});
+
+  /// CatPainter가 그리는 좌표계 크기.
+  static const double _designWidth = 142;
+  static const double _designHeight = 130;
+
+  final double width;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(width: 142, height: 130, child: CustomPaint(painter: CatPainter()));
+    return SizedBox(
+      width: width,
+      height: width * _designHeight / _designWidth,
+      child: const FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: _designWidth,
+          height: _designHeight,
+          child: CustomPaint(painter: CatPainter()),
+        ),
+      ),
+    );
   }
 }
 
