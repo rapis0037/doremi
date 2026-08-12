@@ -96,6 +96,12 @@ void main() {
       '도레미',
     );
     await tester.pump();
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(repository.savedNickname, isNull);
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+
     await tester.ensureVisible(find.text('다음'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('다음'));

@@ -318,7 +318,7 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
               ),
             ),
             onChanged: (_) => setState(() => _message = null),
-            onSubmitted: (_) => _saveNickname(),
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
           const SizedBox(height: 8),
           const Text(
