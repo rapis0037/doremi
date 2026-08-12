@@ -7,6 +7,8 @@ abstract class OnboardingRepository {
 
   Future<GuardianProfile> saveAge(String uid, int age);
 
+  Future<GuardianProfile> saveNickname(String uid, String nickname);
+
   Future<GuardianProfile> savePreference(
     String uid,
     SensoryPreference preference,
@@ -57,6 +59,24 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
     await _guardian(uid).set({
       'childAge': age,
       'ageReferenceYear': _koreaNow().year,
+      'currentStep': OnboardingStep.nickname.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    return _read(uid);
+  }
+
+  @override
+  Future<GuardianProfile> saveNickname(String uid, String nickname) async {
+    final normalized = nickname.trim();
+    if (normalized.isEmpty || normalized.runes.length > 12) {
+      throw ArgumentError.value(
+        nickname,
+        'nickname',
+        '닉네임은 1자부터 12자까지 입력할 수 있습니다.',
+      );
+    }
+    await _guardian(uid).set({
+      'childNickname': normalized,
       'currentStep': OnboardingStep.preference.name,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -107,6 +127,7 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
           OnboardingStep.age,
       childAge: data['childAge'] as int?,
       ageReferenceYear: data['ageReferenceYear'] as int?,
+      childNickname: data['childNickname'] as String?,
       sensoryPreference: preference,
       settings: hasSettings
           ? LearningSettings(

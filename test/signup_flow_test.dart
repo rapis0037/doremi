@@ -45,7 +45,7 @@ void main() {
     await tester.tap(find.text('Google로 회원가입'));
     await tester.pumpAndSettle();
 
-    expect(find.text('아이의 나이를 알려주세요'), findsOneWidget);
+    expect(find.text('아이의 나이를\n알려주세요'), findsOneWidget);
     expect(find.text('6세'), findsOneWidget);
     expect(gateway.lastProvider, SignInProvider.google);
   });
@@ -69,7 +69,40 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('아직 잘 모르겠어요. 끄고 시작할게요.'), findsOneWidget);
+    expect(find.text('아직 잘 모르겠어요.\n끄고 시작할게요.'), findsOneWidget);
+  });
+
+  testWidgets('age continues to nickname and saves it', (tester) async {
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('child-nickname-field')),
+      '도레미',
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.text('다음'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+
+    expect(repository.savedNickname, '도레미');
+    expect(find.text('아이에게 편안한\n학습 방식을 선택해 주세요'), findsOneWidget);
   });
 }
 
@@ -103,6 +136,7 @@ class _FakeOnboardingRepository implements OnboardingRepository {
   _FakeOnboardingRepository({this.initialStep = OnboardingStep.age});
 
   final OnboardingStep initialStep;
+  String? savedNickname;
 
   @override
   Future<GuardianProfile> loadOrCreate(AuthAccount account) async {
@@ -113,9 +147,19 @@ class _FakeOnboardingRepository implements OnboardingRepository {
   Future<GuardianProfile> saveAge(String uid, int age) async {
     return GuardianProfile(
       uid: uid,
-      step: OnboardingStep.preference,
+      step: OnboardingStep.nickname,
       childAge: age,
       ageReferenceYear: 2026,
+    );
+  }
+
+  @override
+  Future<GuardianProfile> saveNickname(String uid, String nickname) async {
+    savedNickname = nickname;
+    return GuardianProfile(
+      uid: uid,
+      step: OnboardingStep.preference,
+      childNickname: nickname,
     );
   }
 

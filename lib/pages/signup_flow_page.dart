@@ -26,6 +26,7 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
   AuthAccount? _account;
   GuardianProfile? _profile;
   SensoryPreference? _selectedPreference;
+  final TextEditingController _nicknameController = TextEditingController();
   int _age = 6;
   bool _busy = false;
   bool _showPreferenceEditor = false;
@@ -73,6 +74,10 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
   }
 
   void _applyProfile(GuardianProfile profile) {
+    final nickname = profile.childNickname;
+    if (nickname != null && _nicknameController.text != nickname) {
+      _nicknameController.text = nickname;
+    }
     setState(() {
       _profile = profile;
       _age = profile.currentAge() ?? _age;
@@ -80,6 +85,12 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
       _busy = false;
       _message = null;
     });
+  }
+
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    super.dispose();
   }
 
   Future<void> _signIn(SignInProvider provider) async {
@@ -140,6 +151,30 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
     }
   }
 
+  Future<void> _saveNickname() async {
+    final repository = widget.onboardingRepository;
+    final account = _account;
+    final nickname = _nicknameController.text.trim();
+    if (repository == null || account == null || _busy) return;
+    if (nickname.isEmpty || nickname.runes.length > 12) {
+      setState(() => _message = '닉네임을 1자부터 12자까지 입력해 주세요.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      _applyProfile(await repository.saveNickname(account.uid, nickname));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _message = '닉네임을 저장하지 못했어요.\n다시 시도해 주세요.';
+      });
+    }
+  }
+
   Future<void> _complete() async {
     final repository = widget.onboardingRepository;
     final account = _account;
@@ -184,6 +219,7 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
     }
     return switch (profile.step) {
       OnboardingStep.age => _agePage(),
+      OnboardingStep.nickname => _nicknamePage(),
       OnboardingStep.preference => _preferencePage(),
       OnboardingStep.confirmation => _confirmationPage(profile),
       OnboardingStep.completed => _SignupScaffold(
@@ -197,8 +233,8 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
 
   Widget _agePage() {
     return _SignupScaffold(
-      title: '아이의 나이를 알려주세요',
-      subtitle: '아이의 나이에 맞는 학습 환경을 준비할게요.',
+      title: '아이의 나이를\n알려주세요',
+      subtitle: '아이의 나이에 맞는\n학습 환경을 준비할게요.',
       message: _message,
       busy: _busy,
       child: Column(
@@ -250,10 +286,63 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
     );
   }
 
+  Widget _nicknamePage() {
+    return _SignupScaffold(
+      title: '아이가 사용할\n닉네임을 정해 주세요',
+      subtitle: '학습 화면에서 아이를\n이 이름으로 불러줄게요.',
+      message: _message,
+      busy: _busy,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            '닉네임',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            key: const Key('child-nickname-field'),
+            controller: _nicknameController,
+            enabled: !_busy,
+            autofocus: true,
+            textAlign: TextAlign.center,
+            textInputAction: TextInputAction.done,
+            maxLength: 12,
+            decoration: InputDecoration(
+              hintText: '예: 도레미',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onChanged: (_) => setState(() => _message = null),
+            onSubmitted: (_) => _saveNickname(),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '한글·영문·숫자로\n12자까지 입력할 수 있어요.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xff596775), height: 1.5),
+          ),
+          const SizedBox(height: 28),
+          _PrimaryButton(
+            label: '다음',
+            busy: _busy,
+            onPressed: _nicknameController.text.trim().isEmpty
+                ? null
+                : _saveNickname,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _preferencePage() {
     return _SignupScaffold(
-      title: '아이에게 편안한 학습 방식을 선택해 주세요',
-      subtitle: '현재 아이에게 가장 가까운 모습을 하나 선택해 주세요.',
+      title: '아이에게 편안한\n학습 방식을 선택해 주세요',
+      subtitle: '현재 아이에게 가장 가까운 모습을\n하나 선택해 주세요.',
       message: _message,
       busy: _busy,
       child: Column(
@@ -311,8 +400,8 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
       );
     }
     return _SignupScaffold(
-      title: '아이에게 맞는 학습 환경을 준비했어요',
-      subtitle: '선택한 내용을 바탕으로 실제 저장될 설정이에요.',
+      title: '아이에게 맞는 학습 환경을\n준비했어요',
+      subtitle: '선택한 내용을 바탕으로\n실제로 저장될 설정이에요.',
       message: _message,
       busy: _busy,
       child: Column(
@@ -325,7 +414,7 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
           ),
           const SizedBox(height: 20),
           const Text(
-            '보호자 설정에서 언제든 자유롭게 변경할 수 있어요.',
+            '보호자 설정에서 언제든\n자유롭게 변경할 수 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Color(0xff596775)),
           ),
@@ -646,7 +735,7 @@ class _LoginButtons extends StatelessWidget {
         ],
         const SizedBox(height: 14),
         const Text(
-          '계속하면 이용약관과 개인정보처리방침에 동의하게 됩니다.',
+          '계속하면 이용약관과 개인정보처리방침에\n동의하게 됩니다.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xff687582), height: 1.45),
         ),
@@ -778,15 +867,15 @@ class _PreferenceOption {
 }
 
 const _preferenceOptions = [
-  _PreferenceOption(SensoryPreference.calm, '조용하고 차분한 환경에서 더 편안하게 집중해요.'),
+  _PreferenceOption(SensoryPreference.calm, '조용하고 차분한 환경에서\n더 편안하게 집중해요.'),
   _PreferenceOption(
     SensoryPreference.voiceOnly,
-    '계이름 음성은 좋아하지만, 반짝이는 화면 효과는 불편해해요.',
+    '계이름 음성은 좋아하지만,\n반짝이는 화면 효과는 불편해해요.',
   ),
   _PreferenceOption(
     SensoryPreference.visualOnly,
-    '화면의 축하 효과는 좋아하지만, 계이름 음성은 불편해해요.',
+    '화면의 축하 효과는 좋아하지만,\n계이름 음성은 불편해해요.',
   ),
-  _PreferenceOption(SensoryPreference.both, '반짝이는 효과와 계이름 음성을 모두 편안하게 받아들여요.'),
-  _PreferenceOption(SensoryPreference.unknown, '아직 잘 모르겠어요. 끄고 시작할게요.'),
+  _PreferenceOption(SensoryPreference.both, '반짝이는 효과와 계이름 음성을\n모두 편안하게 받아들여요.'),
+  _PreferenceOption(SensoryPreference.unknown, '아직 잘 모르겠어요.\n끄고 시작할게요.'),
 ];
