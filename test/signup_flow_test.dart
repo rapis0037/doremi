@@ -40,8 +40,9 @@ void main() {
       ),
     );
 
-    expect(find.text('Google로 계속하기'), findsOneWidget);
-    await tester.tap(find.text('Google로 계속하기'));
+    expect(find.text('Google로 회원가입'), findsOneWidget);
+    await tester.ensureVisible(find.text('Google로 회원가입'));
+    await tester.tap(find.text('Google로 회원가입'));
     await tester.pumpAndSettle();
 
     expect(find.text('아이의 나이를 알려주세요'), findsOneWidget);

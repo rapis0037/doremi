@@ -1,11 +1,10 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/auth_gateway.dart';
 import '../auth/auth_models.dart';
 import '../auth/onboarding_repository.dart';
+import '../widgets/app_background.dart';
+import '../widgets/cat_face.dart';
 
 class SignupFlowPage extends StatefulWidget {
   const SignupFlowPage({
@@ -165,12 +164,10 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
   Widget build(BuildContext context) {
     final profile = _profile;
     if (_account == null) {
-      return _SignupScaffold(
-        title: '너두! 도레미 시작하기',
-        subtitle: '보호자 계정으로 간편하게 시작해 주세요.',
+      return _WelcomeSignupPage(
         message: _message,
         busy: _busy,
-        child: _LoginButtons(busy: _busy, onSignIn: _signIn),
+        onSignIn: _signIn,
       );
     }
     if (profile == null) {
@@ -346,6 +343,145 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
   }
 }
 
+class _WelcomeSignupPage extends StatelessWidget {
+  const _WelcomeSignupPage({
+    required this.message,
+    required this.busy,
+    required this.onSignIn,
+  });
+
+  final String? message;
+  final bool busy;
+  final ValueChanged<SignInProvider> onSignIn;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: AppBackground(
+      child: SafeArea(
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 64,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Column(
+                        children: [
+                          const Text(
+                            '너두! 도레미!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xff241d20),
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            '고양이와 함께 시작하는 음악 탐험',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xff687680),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 44),
+                          const _CatWelcome(),
+                          const SizedBox(height: 40),
+                          const Text(
+                            '반가워요!',
+                            style: TextStyle(
+                              color: Color(0xff241d20),
+                              fontSize: 25,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            '보호자 계정을 연결하고\n우리만의 음악 탐험을 시작해요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xff687680),
+                              height: 1.45,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (message != null) ...[
+                            const SizedBox(height: 18),
+                            Semantics(
+                              liveRegion: true,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(13),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffffedf2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  message!,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 30),
+                          _LoginButtons(busy: busy, onSignIn: onSignIn),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (busy)
+              const Positioned(
+                top: 12,
+                right: 16,
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _CatWelcome extends StatelessWidget {
+  const _CatWelcome();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 210,
+    height: 210,
+    decoration: BoxDecoration(
+      color: const Color(0xfffff0c9),
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 8),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x16000000),
+          blurRadius: 24,
+          offset: Offset(0, 10),
+        ),
+      ],
+    ),
+    child: const Center(child: CatFace(width: 174)),
+  );
+}
+
 class _SignupScaffold extends StatelessWidget {
   const _SignupScaffold({
     required this.title,
@@ -457,31 +593,52 @@ class _LoginButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final providers = !kIsWeb && Platform.isIOS
-        ? const [SignInProvider.apple, SignInProvider.google]
-        : const [SignInProvider.google, SignInProvider.apple];
+    final providers = const [SignInProvider.apple, SignInProvider.google];
     return Column(
       children: [
         for (final provider in providers) ...[
           SizedBox(
             width: double.infinity,
-            height: 54,
-            child: OutlinedButton.icon(
+            height: 58,
+            child: FilledButton(
               onPressed: busy ? null : () => onSignIn(provider),
-              icon: Icon(
-                provider == SignInProvider.google
-                    ? Icons.g_mobiledata_rounded
-                    : Icons.apple,
-                size: 30,
-              ),
-              label: Text(
-                provider == SignInProvider.google
-                    ? 'Google로 계속하기'
-                    : 'Apple로 계속하기',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+              style: FilledButton.styleFrom(
+                backgroundColor: provider == SignInProvider.apple
+                    ? const Color(0xff191919)
+                    : Colors.white,
+                foregroundColor: provider == SignInProvider.apple
+                    ? Colors.white
+                    : const Color(0xff2f3135),
+                disabledBackgroundColor: provider == SignInProvider.apple
+                    ? const Color(0xff777777)
+                    : const Color(0xfff2f2f2),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: provider == SignInProvider.google
+                      ? const BorderSide(color: Color(0xffd9dde2))
+                      : BorderSide.none,
                 ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: provider == SignInProvider.apple
+                        ? const Icon(Icons.apple, size: 28)
+                        : const _GoogleMark(),
+                  ),
+                  Text(
+                    provider == SignInProvider.google
+                        ? 'Google로 회원가입'
+                        : 'Apple로 회원가입',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -496,6 +653,30 @@ class _LoginButtons extends StatelessWidget {
       ],
     );
   }
+}
+
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 27,
+    height: 27,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      shape: BoxShape.circle,
+      border: Border.all(color: const Color(0xffe1e4e8)),
+    ),
+    child: const Text(
+      'G',
+      style: TextStyle(
+        color: Color(0xff4285f4),
+        fontSize: 17,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+  );
 }
 
 class _AgeButton extends StatelessWidget {
