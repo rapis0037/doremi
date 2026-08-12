@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "88743352145-8e1a1iab4c4m2gmut99m5p236404kkgn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cheesetabby.doremi",
+            "certificate_hash": "9350b5390c2c7d3c9165e6ab31e26aa9a7ba7708"
+          }
+        },
+        {
           "client_id": "88743352145-f5lsmcr7lvb1d4jo5peudsaknkv6u45h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
