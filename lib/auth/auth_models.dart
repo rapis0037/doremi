@@ -36,7 +36,7 @@ class AuthFailure implements Exception {
 
 enum SensoryPreference { calm, voiceOnly, visualOnly, both, unknown }
 
-enum OnboardingStep { age, preference, confirmation, completed }
+enum OnboardingStep { age, nickname, preference, confirmation, completed }
 
 class LearningSettings {
   const LearningSettings({
@@ -86,6 +86,7 @@ class GuardianProfile {
     required this.step,
     this.childAge,
     this.ageReferenceYear,
+    this.childNickname,
     this.sensoryPreference,
     this.settings,
   });
@@ -94,6 +95,7 @@ class GuardianProfile {
   final OnboardingStep step;
   final int? childAge;
   final int? ageReferenceYear;
+  final String? childNickname;
   final SensoryPreference? sensoryPreference;
   final LearningSettings? settings;
 

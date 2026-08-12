@@ -40,16 +40,40 @@ void main() {
       ),
     );
 
-    expect(find.text('Google로 계속하기'), findsOneWidget);
-    await tester.tap(find.text('Google로 계속하기'));
+    expect(find.text('Google로 회원가입'), findsOneWidget);
+    await tester.ensureVisible(find.text('Google로 회원가입'));
+    await tester.tap(find.text('Google로 회원가입'));
     await tester.pumpAndSettle();
 
-    expect(find.text('아이의 나이를 알려주세요'), findsOneWidget);
+    expect(find.text('아이의 나이를\n알려주세요'), findsOneWidget);
     expect(find.text('6세'), findsOneWidget);
     expect(gateway.lastProvider, SignInProvider.google);
   });
 
   testWidgets('preference page includes the agreed unknown copy', (
+    tester,
+  ) async {
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository(
+      initialStep: OnboardingStep.preference,
+      initialNickname: '도레미',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('아직 잘 모르겠어요.\n끄고 시작할게요.'), findsOneWidget);
+  });
+
+  testWidgets('existing account without nickname is sent to nickname screen', (
     tester,
   ) async {
     final gateway = _FakeAuthGateway(signedIn: true);
@@ -68,7 +92,73 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('아직 잘 모르겠어요. 끄고 시작할게요.'), findsOneWidget);
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+  });
+
+  testWidgets('completed account without nickname stays on nickname screen', (
+    tester,
+  ) async {
+    var completed = false;
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository(
+      initialStep: OnboardingStep.completed,
+      initialSettings: LearningSettings.fromPreference(
+        SensoryPreference.unknown,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) => completed = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+    expect(completed, isFalse);
+  });
+
+  testWidgets('age continues to nickname and saves it', (tester) async {
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('child-nickname-field')),
+      '도레미',
+    );
+    await tester.pump();
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(repository.savedNickname, isNull);
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('다음'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+
+    expect(repository.savedNickname, '도레미');
+    expect(find.text('아이에게 편안한\n학습 방식을 선택해 주세요'), findsOneWidget);
   });
 }
 
@@ -99,22 +189,44 @@ class _FakeAuthGateway implements AuthGateway {
 }
 
 class _FakeOnboardingRepository implements OnboardingRepository {
-  _FakeOnboardingRepository({this.initialStep = OnboardingStep.age});
+  _FakeOnboardingRepository({
+    this.initialStep = OnboardingStep.age,
+    this.initialNickname,
+    this.initialSettings,
+  });
 
   final OnboardingStep initialStep;
+  final String? initialNickname;
+  final LearningSettings? initialSettings;
+  String? savedNickname;
 
   @override
   Future<GuardianProfile> loadOrCreate(AuthAccount account) async {
-    return GuardianProfile(uid: account.uid, step: initialStep);
+    return GuardianProfile(
+      uid: account.uid,
+      step: initialStep,
+      childNickname: initialNickname,
+      settings: initialSettings,
+    );
   }
 
   @override
   Future<GuardianProfile> saveAge(String uid, int age) async {
     return GuardianProfile(
       uid: uid,
-      step: OnboardingStep.preference,
+      step: OnboardingStep.nickname,
       childAge: age,
       ageReferenceYear: 2026,
+    );
+  }
+
+  @override
+  Future<GuardianProfile> saveNickname(String uid, String nickname) async {
+    savedNickname = nickname;
+    return GuardianProfile(
+      uid: uid,
+      step: OnboardingStep.preference,
+      childNickname: nickname,
     );
   }
 

@@ -12,7 +12,6 @@ import 'package:doremi/layout/lesson_scene.dart';
 import 'package:doremi/main.dart';
 import 'package:doremi/widgets/app_background.dart';
 import 'package:doremi/widgets/app_header.dart';
-import 'package:doremi/widgets/cat_face.dart';
 import 'package:doremi/widgets/mode_button.dart';
 import 'package:doremi/widgets/responsive_viewport.dart';
 import 'package:doremi/widgets/scene_view.dart';
@@ -432,13 +431,11 @@ void main() {
       expect(header.height, closeTo(AppHeader.defaultHeight, 0.5));
     });
 
-    testWidgets('세로에서 고양이와 단계 목록이 한 칸 아래로 내려간다', (tester) async {
+    testWidgets('세로에서 3단계 카드 하단이 화면 안에 보인다', (tester) async {
       await pumpAppAt(tester, const Size(412, 915));
 
-      final header = tester.getRect(find.byType(AppHeader));
-      final cat = tester.getRect(find.byType(CatFace));
-      // 헤더 바로 아래가 아니라, 카드 한 칸만큼 띄운 자리에서 시작한다.
-      expect(cat.top - header.bottom, greaterThan(StepCard.height));
+      final thirdCard = tester.getRect(find.byType(StepCard).last);
+      expect(thirdCard.bottom, lessThanOrEqualTo(915));
     });
   });
 

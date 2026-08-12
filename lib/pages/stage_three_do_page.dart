@@ -8,6 +8,7 @@ import '../layout/keyboard_layout.dart';
 import '../painters/challenge_painter.dart';
 import '../widgets/scene_view.dart';
 import '../widgets/stage_shell.dart';
+import '../widgets/step_card.dart';
 
 class StageThreeDoPage extends StatefulWidget {
   const StageThreeDoPage({
@@ -24,7 +25,8 @@ class StageThreeDoPage extends StatefulWidget {
   State<StageThreeDoPage> createState() => _StageThreeDoPageState();
 }
 
-class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProviderStateMixin {
+class _StageThreeDoPageState extends State<StageThreeDoPage>
+    with TickerProviderStateMixin {
   static const _home = Offset(400, 590);
   final TonePlayer tone = TonePlayer();
   late final AnimationController _returnCtrl;
@@ -48,8 +50,11 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
   void initState() {
     super.initState();
     tone.preload();
-    _returnCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420))
-      ..addListener(() {
+    _returnCtrl =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 420),
+        )..addListener(() {
           setState(() {
             _heart = Offset.lerp(
               _returnStart,
@@ -58,21 +63,34 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
             )!;
           });
         });
-    _guide = AnimationController(vsync: this, duration: const Duration(milliseconds: 850));
-    _confetti = AnimationController(vsync: this, duration: const Duration(milliseconds: 1300));
-    _performance = AnimationController(vsync: this, duration: const Duration(milliseconds: 4800))
-      ..addListener(_updatePerformance)
-      ..addStatusListener((status) {
-          if (status == AnimationStatus.completed && mounted) {
-            setState(() => _activeNote = -1);
-            _popupTimer = Timer(const Duration(milliseconds: 350), () {
-              if (!mounted) return;
-              setState(() => _showPopup = true);
-              _popup.forward(from: 0);
-            });
-          }
-        });
-    _popup = AnimationController(vsync: this, duration: const Duration(milliseconds: 360));
+    _guide = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    );
+    _confetti = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    );
+    _performance =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 4800),
+          )
+          ..addListener(_updatePerformance)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() => _activeNote = -1);
+              _popupTimer = Timer(const Duration(milliseconds: 350), () {
+                if (!mounted) return;
+                setState(() => _showPopup = true);
+                _popup.forward(from: 0);
+              });
+            }
+          });
+    _popup = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
   }
 
   void _updatePerformance() {
@@ -119,7 +137,8 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
   }
 
   bool _nearHeart(Offset point) => (point - _heart).distance < 76;
-  bool _inDoTarget(Offset point) => _keyboard.whiteKeyRect(0).inflate(24).contains(point);
+  bool _inDoTarget(Offset point) =>
+      _keyboard.whiteKeyRect(0).inflate(24).contains(point);
 
   void _accept() {
     if (_fixed) return;
@@ -183,15 +202,25 @@ class _StageThreeDoPageState extends State<StageThreeDoPage> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final wide = screenSize.width > screenSize.height;
     return StageShell(
       title: '도 음정 끌어놓기',
       subtitle: '핑크 하트를 도 건반으로 옮겨보세요',
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
       onBack: widget.onBack,
+      headerHeight: wide ? 68 : StepCard.height,
+      headerContentScale: wide ? 1 : 1.3,
+      headerContentOffsetY: wide ? 0 : 70,
       child: Center(
         child: AnimatedBuilder(
-          animation: Listenable.merge([_guide, _confetti, _performance, _popup]),
+          animation: Listenable.merge([
+            _guide,
+            _confetti,
+            _performance,
+            _popup,
+          ]),
           builder: (context, _) => SceneView(
             onTap: _onTap,
             onPanStart: _onPanStart,

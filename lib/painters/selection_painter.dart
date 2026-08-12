@@ -12,7 +12,12 @@ class SelectionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     scaleScene(canvas, size);
-    drawKeyboard(canvas, keyboard, noteList: notes.take(keyboard.count).toList());
+    drawKeyboard(
+      canvas,
+      keyboard,
+      noteList: notes.take(keyboard.count).toList(),
+      splitLayout: true,
+    );
   }
 
   @override

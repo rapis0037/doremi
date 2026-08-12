@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../auth/auth_models.dart';
 import '../core/models.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_header.dart';
@@ -16,10 +17,24 @@ class HomePage extends StatelessWidget {
     required this.onStageOne,
     required this.onStageTwo,
     required this.onStageThree,
+    required this.voiceOn,
+    required this.sparklesOn,
+    required this.onVoiceChanged,
+    required this.onSparklesChanged,
+    this.account,
+    this.profile,
+    this.onSignOut,
   });
   final VoidCallback onStageOne;
   final VoidCallback onStageTwo;
   final VoidCallback onStageThree;
+  final bool voiceOn;
+  final bool sparklesOn;
+  final ValueChanged<bool> onVoiceChanged;
+  final ValueChanged<bool> onSparklesChanged;
+  final AuthAccount? account;
+  final GuardianProfile? profile;
+  final Future<void> Function()? onSignOut;
 
   List<Widget> _stepCards() => [
     StepCard(
@@ -65,7 +80,16 @@ class HomePage extends StatelessWidget {
                     title: '너두! 도레미!',
                     subtitle: '고양이와 함께 시작하는 음악 탐험',
                     trailing: Icons.settings_outlined,
-                    onTrailing: () => showMainSettings(context),
+                    onTrailing: () => showMainSettings(
+                      context,
+                      account: account,
+                      profile: profile,
+                      voiceOn: voiceOn,
+                      sparklesOn: sparklesOn,
+                      onVoiceChanged: onVoiceChanged,
+                      onSparklesChanged: onSparklesChanged,
+                      onSignOut: onSignOut,
+                    ),
                     // 세로에서는 헤더도 단계 카드 한 칸만큼 자리를 잡는다.
                     // 가로는 화면이 낮아 그대로 두면 본문이 눌린다.
                     height: wide ? AppHeader.defaultHeight : StepCard.height,
@@ -91,8 +115,9 @@ class HomePage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
           child: Column(
             children: [
-              // 고양이와 단계 목록을 한 칸 아래에서 시작하게 한다.
-              const SizedBox(height: StepCard.height + StepCard.gap),
+              // 작은 화면에서도 3단계 카드 하단이 잘리지 않도록 콘텐츠 묶음을
+              // 기존 위치보다 위로 당긴다.
+              const SizedBox(height: 68),
               const SizedBox(
                 height: 190,
                 child: Center(child: CatFace(width: 198)),
