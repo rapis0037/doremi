@@ -65,7 +65,7 @@ Future<void> _showLearningSettings(
                 SwitchListTile.adaptive(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   title: const Text(
-                    '목소리',
+                    '계이름 목소리',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   value: currentVoice,

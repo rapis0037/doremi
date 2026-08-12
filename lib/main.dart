@@ -94,18 +94,37 @@ class _AuthenticatedEntry extends StatefulWidget {
 
 class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
   bool _onboardingComplete = false;
+  GuardianProfile? _profile;
 
   void _finishOnboarding(LearningSettings settings) {
     widget.preferences?.setBool('voice_on', settings.solfegeVoiceEnabled);
     widget.preferences?.setBool('sparkles_on', settings.sparkleEnabled);
     widget.preferences?.setBool('sensory_setup_complete', true);
     if (mounted) setState(() => _onboardingComplete = true);
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final account = widget.authGateway.currentAccount;
+    final repository = widget.onboardingRepository;
+    if (account == null || repository == null) return;
+    try {
+      final profile = await repository.loadOrCreate(account);
+      if (mounted) setState(() => _profile = profile);
+    } catch (_) {
+      // 프로필 표시 실패가 학습 화면 진입을 막지 않게 한다.
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_onboardingComplete) {
-      return MusicLearningPage(preferences: widget.preferences);
+      return MusicLearningPage(
+        preferences: widget.preferences,
+        account: widget.authGateway.currentAccount,
+        profile: _profile,
+        onSignOut: _signOut,
+      );
     }
     return SignupFlowPage(
       authGateway: widget.authGateway,
@@ -113,12 +132,34 @@ class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
       onCompleted: _finishOnboarding,
     );
   }
+
+  Future<void> _signOut() async {
+    await widget.authGateway.signOut();
+    await widget.preferences?.remove('voice_on');
+    await widget.preferences?.remove('sparkles_on');
+    await widget.preferences?.remove('sensory_setup_complete');
+    if (mounted) {
+      setState(() {
+        _profile = null;
+        _onboardingComplete = false;
+      });
+    }
+  }
 }
 
 class MusicLearningPage extends StatefulWidget {
-  const MusicLearningPage({super.key, this.preferences});
+  const MusicLearningPage({
+    super.key,
+    this.preferences,
+    this.account,
+    this.profile,
+    this.onSignOut,
+  });
 
   final SharedPreferences? preferences;
+  final AuthAccount? account;
+  final GuardianProfile? profile;
+  final Future<void> Function()? onSignOut;
 
   @override
   State<MusicLearningPage> createState() => _MusicLearningPageState();
@@ -192,6 +233,13 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
             onStageOne: () => _open(RootPage.stageOne),
             onStageTwo: () => _open(RootPage.arModes),
             onStageThree: () => _open(RootPage.stageThree),
+            voiceOn: _voiceOn,
+            sparklesOn: _sparklesOn,
+            onVoiceChanged: _setVoice,
+            onSparklesChanged: _setSparkles,
+            account: widget.account,
+            profile: widget.profile,
+            onSignOut: widget.onSignOut,
           ),
         );
       case RootPage.stageOne:

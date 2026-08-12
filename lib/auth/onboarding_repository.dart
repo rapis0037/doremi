@@ -75,9 +75,20 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
         '닉네임은 1자부터 12자까지 입력할 수 있습니다.',
       );
     }
+    final snapshot = await _guardian(uid).get();
+    final currentStep = _enumByName(
+      OnboardingStep.values,
+      snapshot.data()?['currentStep'] as String?,
+    );
+    final nextStep =
+        currentStep == null ||
+            currentStep == OnboardingStep.age ||
+            currentStep == OnboardingStep.nickname
+        ? OnboardingStep.preference
+        : currentStep;
     await _guardian(uid).set({
       'childNickname': normalized,
-      'currentStep': OnboardingStep.preference.name,
+      'currentStep': nextStep.name,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     return _read(uid);

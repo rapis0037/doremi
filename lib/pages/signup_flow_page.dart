@@ -58,8 +58,10 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
       final profile = await repository.loadOrCreate(account);
       if (!mounted) return;
       _applyProfile(profile);
+      final hasNickname = profile.childNickname?.trim().isNotEmpty ?? false;
       if (profile.step == OnboardingStep.completed &&
-          profile.settings != null) {
+          profile.settings != null &&
+          hasNickname) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) widget.onCompleted(profile.settings!);
         });
@@ -165,7 +167,12 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
       _message = null;
     });
     try {
-      _applyProfile(await repository.saveNickname(account.uid, nickname));
+      final profile = await repository.saveNickname(account.uid, nickname);
+      _applyProfile(profile);
+      if (profile.step == OnboardingStep.completed &&
+          profile.settings != null) {
+        widget.onCompleted(profile.settings!);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -213,6 +220,11 @@ class _SignupFlowPageState extends State<SignupFlowPage> {
         onRetry: () => _loadProfile(_account!),
         child: const SizedBox.shrink(),
       );
+    }
+    if (profile.step != OnboardingStep.age &&
+        (profile.childNickname == null ||
+            profile.childNickname!.trim().isEmpty)) {
+      return _nicknamePage();
     }
     if (_showPreferenceEditor || profile.step == OnboardingStep.preference) {
       return _preferencePage();

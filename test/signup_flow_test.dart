@@ -56,6 +56,7 @@ void main() {
     final gateway = _FakeAuthGateway(signedIn: true);
     final repository = _FakeOnboardingRepository(
       initialStep: OnboardingStep.preference,
+      initialNickname: '도레미',
     );
 
     await tester.pumpWidget(
@@ -70,6 +71,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('아직 잘 모르겠어요.\n끄고 시작할게요.'), findsOneWidget);
+  });
+
+  testWidgets('existing account without nickname is sent to nickname screen', (
+    tester,
+  ) async {
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository(
+      initialStep: OnboardingStep.preference,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+  });
+
+  testWidgets('completed account without nickname stays on nickname screen', (
+    tester,
+  ) async {
+    var completed = false;
+    final gateway = _FakeAuthGateway(signedIn: true);
+    final repository = _FakeOnboardingRepository(
+      initialStep: OnboardingStep.completed,
+      initialSettings: LearningSettings.fromPreference(
+        SensoryPreference.unknown,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SignupFlowPage(
+          authGateway: gateway,
+          onboardingRepository: repository,
+          onCompleted: (_) => completed = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('아이가 사용할\n닉네임을 정해 주세요'), findsOneWidget);
+    expect(completed, isFalse);
   });
 
   testWidgets('age continues to nickname and saves it', (tester) async {
@@ -139,14 +189,25 @@ class _FakeAuthGateway implements AuthGateway {
 }
 
 class _FakeOnboardingRepository implements OnboardingRepository {
-  _FakeOnboardingRepository({this.initialStep = OnboardingStep.age});
+  _FakeOnboardingRepository({
+    this.initialStep = OnboardingStep.age,
+    this.initialNickname,
+    this.initialSettings,
+  });
 
   final OnboardingStep initialStep;
+  final String? initialNickname;
+  final LearningSettings? initialSettings;
   String? savedNickname;
 
   @override
   Future<GuardianProfile> loadOrCreate(AuthAccount account) async {
-    return GuardianProfile(uid: account.uid, step: initialStep);
+    return GuardianProfile(
+      uid: account.uid,
+      step: initialStep,
+      childNickname: initialNickname,
+      settings: initialSettings,
+    );
   }
 
   @override

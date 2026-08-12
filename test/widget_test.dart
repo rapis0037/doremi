@@ -12,7 +12,6 @@ import 'package:doremi/layout/lesson_scene.dart';
 import 'package:doremi/main.dart';
 import 'package:doremi/widgets/app_background.dart';
 import 'package:doremi/widgets/app_header.dart';
-import 'package:doremi/widgets/cat_face.dart';
 import 'package:doremi/widgets/mode_button.dart';
 import 'package:doremi/widgets/responsive_viewport.dart';
 import 'package:doremi/widgets/scene_view.dart';
@@ -258,10 +257,7 @@ void main() {
 
     test('톡톡 Lite와 1단계가 완전히 같은 좌표계를 쓴다', () {
       for (final selected in [null, notes[0], notes[7]]) {
-        final stageOne = LessonScene.of(
-          landscape: false,
-          selected: selected,
-        );
+        final stageOne = LessonScene.of(landscape: false, selected: selected);
         final lite = LessonScene.of(
           landscape: false,
           selected: selected,
@@ -381,16 +377,24 @@ void main() {
       await tester.tap(find.byType(StepCard).first);
       await tester.pumpAndSettle();
       final stageOneTitle = tester.getRect(find.text('톡톡! 한 음 익히기'));
-      final stageOneBack = tester.getRect(find.byIcon(Icons.arrow_back_rounded));
-      final stageOneNote = tester.getRect(find.byIcon(Icons.music_note_rounded));
+      final stageOneBack = tester.getRect(
+        find.byIcon(Icons.arrow_back_rounded),
+      );
+      final stageOneNote = tester.getRect(
+        find.byIcon(Icons.music_note_rounded),
+      );
 
       await tester.tap(find.byIcon(Icons.arrow_back_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(StepCard).at(1));
       await tester.pumpAndSettle();
       final stageTwoTitle = tester.getRect(find.text('AR 톡톡! 한 음 만나기'));
-      final stageTwoBack = tester.getRect(find.byIcon(Icons.arrow_back_rounded));
-      final stageTwoNote = tester.getRect(find.byIcon(Icons.music_note_rounded));
+      final stageTwoBack = tester.getRect(
+        find.byIcon(Icons.arrow_back_rounded),
+      );
+      final stageTwoNote = tester.getRect(
+        find.byIcon(Icons.music_note_rounded),
+      );
 
       expect(stageTwoTitle.height, closeTo(stageOneTitle.height, 1));
       expect(stageTwoTitle.center.dx, closeTo(stageOneTitle.center.dx, 1));
@@ -427,13 +431,11 @@ void main() {
       expect(header.height, closeTo(AppHeader.defaultHeight, 0.5));
     });
 
-    testWidgets('세로에서 고양이와 단계 목록이 한 칸 아래로 내려간다', (tester) async {
+    testWidgets('세로에서 3단계 카드 하단이 화면 안에 보인다', (tester) async {
       await pumpAppAt(tester, const Size(412, 915));
 
-      final header = tester.getRect(find.byType(AppHeader));
-      final cat = tester.getRect(find.byType(CatFace));
-      // 헤더 바로 아래가 아니라, 카드 한 칸만큼 띄운 자리에서 시작한다.
-      expect(cat.top - header.bottom, greaterThan(StepCard.height));
+      final thirdCard = tester.getRect(find.byType(StepCard).last);
+      expect(thirdCard.bottom, lessThanOrEqualTo(915));
     });
   });
 
@@ -454,9 +456,7 @@ void main() {
     await tester.pumpAndSettle();
     final modeButton = tester.getRect(find.byType(ModeButton).first);
     final modeTitle = tester.widget<Text>(find.text('톡톡 Lite'));
-    final modeSecondary = tester.widget<Text>(
-      find.text('카메라 화면 위에서 한 음 만나기'),
-    );
+    final modeSecondary = tester.widget<Text>(find.text('카메라 화면 위에서 한 음 만나기'));
 
     expect(modeButton.width, closeTo(mainCard.width, 0.5));
     expect(modeButton.height, closeTo(mainCard.height, 0.5));
@@ -530,24 +530,21 @@ void main() {
     }
 
     for (final screen in [const Size(412, 915), const Size(1280, 800)]) {
-      testWidgets(
-        '$screen 에서 초기 건반이 1단계와 같은 크기와 위치다',
-        (tester) async {
-          await pumpAppAt(tester, screen);
-          await tester.tap(find.byType(StepCard).first);
-          await tester.pumpAndSettle();
-          final stageOneScene = tester.getRect(find.byType(SceneView));
+      testWidgets('$screen 에서 초기 건반이 1단계와 같은 크기와 위치다', (tester) async {
+        await pumpAppAt(tester, screen);
+        await tester.tap(find.byType(StepCard).first);
+        await tester.pumpAndSettle();
+        final stageOneScene = tester.getRect(find.byType(SceneView));
 
-          await pumpAppAt(tester, screen);
-          await openLite(tester);
-          final liteScene = tester.getRect(find.byType(SceneView));
+        await pumpAppAt(tester, screen);
+        await openLite(tester);
+        final liteScene = tester.getRect(find.byType(SceneView));
 
-          expect(liteScene.width, closeTo(stageOneScene.width, 0.5));
-          expect(liteScene.height, closeTo(stageOneScene.height, 0.5));
-          expect(liteScene.center.dx, closeTo(stageOneScene.center.dx, 0.5));
-          expect(liteScene.center.dy, closeTo(stageOneScene.center.dy, 0.5));
-        },
-      );
+        expect(liteScene.width, closeTo(stageOneScene.width, 0.5));
+        expect(liteScene.height, closeTo(stageOneScene.height, 0.5));
+        expect(liteScene.center.dx, closeTo(stageOneScene.center.dx, 0.5));
+        expect(liteScene.center.dy, closeTo(stageOneScene.center.dy, 0.5));
+      });
     }
 
     for (final screen in [
