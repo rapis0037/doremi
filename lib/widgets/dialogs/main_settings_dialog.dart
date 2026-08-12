@@ -109,11 +109,24 @@ Future<void> showMainSettings(
                     dialogContext,
                     title: '회사 안내',
                     body:
-                        '너두! 도레미는 아이들이 음악을\n'
-                        '즐겁고 편안하게 경험할 수 있도록\n'
-                        '학습 콘텐츠를 만들고 있습니다.\n\n'
-                        '사업자 정보와 고객지원 연락처는\n'
-                        '정식 출시 전에 업데이트할 예정입니다.',
+                        '회사명\n'
+                        'CT.ENT\n\n'
+                        '한글명\n'
+                        '치즈태비 엔터테인먼트\n\n'
+                        '영문명\n'
+                        'CT.ENT / Cheese Tabby Entertainment\n\n'
+                        '개발자\n'
+                        '윤요한\n\n'
+                        '기획자\n'
+                        '전한나\n\n'
+                        '대표 이메일 및 고객지원 문의\n'
+                        'cheesetabby.ent@gmail.com\n\n'
+                        '고객지원 이메일\n'
+                        'cheesetabby.ent@gmail.com\n\n'
+                        '고객지원 문의\n'
+                        'http://pf.kakao.com/_bxorxnX/chat\n\n'
+                        '인스타그램 - 치즈태비\n'
+                        '@cheesetabby_ent',
                   ),
                 ),
                 SettingsRow(
