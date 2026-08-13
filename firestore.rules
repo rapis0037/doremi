@@ -5,7 +5,9 @@ service cloud.firestore {
     match /guardians/{guardianId} {
       allow read, create, update: if request.auth != null
         && request.auth.uid == guardianId;
-      allow delete: if false;
+      // 계정 삭제(탈퇴) 시 본인 문서만 지울 수 있다.
+      allow delete: if request.auth != null
+        && request.auth.uid == guardianId;
     }
   }
 }

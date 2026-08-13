@@ -124,6 +124,7 @@ class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
         account: widget.authGateway.currentAccount,
         profile: _profile,
         onSignOut: _signOut,
+        onDeleteAccount: _deleteAccount,
       );
     }
     return SignupFlowPage(
@@ -135,6 +136,22 @@ class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
 
   Future<void> _signOut() async {
     await widget.authGateway.signOut();
+    await _clearLocalState();
+  }
+
+  Future<void> _deleteAccount() async {
+    final account = widget.authGateway.currentAccount;
+    final repository = widget.onboardingRepository;
+    // 저장된 아이 정보를 먼저 지운다. 인증 계정이 사라진 뒤에는 보안 규칙이
+    // 문서 삭제를 막아 데이터만 남는다.
+    if (account != null && repository != null) {
+      await repository.deleteProfile(account.uid);
+    }
+    await widget.authGateway.deleteAccount();
+    await _clearLocalState();
+  }
+
+  Future<void> _clearLocalState() async {
     await widget.preferences?.remove('voice_on');
     await widget.preferences?.remove('sparkles_on');
     await widget.preferences?.remove('sensory_setup_complete');
@@ -154,12 +171,14 @@ class MusicLearningPage extends StatefulWidget {
     this.account,
     this.profile,
     this.onSignOut,
+    this.onDeleteAccount,
   });
 
   final SharedPreferences? preferences;
   final AuthAccount? account;
   final GuardianProfile? profile;
   final Future<void> Function()? onSignOut;
+  final Future<void> Function()? onDeleteAccount;
 
   @override
   State<MusicLearningPage> createState() => _MusicLearningPageState();
@@ -240,6 +259,7 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
             account: widget.account,
             profile: widget.profile,
             onSignOut: widget.onSignOut,
+            onDeleteAccount: widget.onDeleteAccount,
           ),
         );
       case RootPage.stageOne:

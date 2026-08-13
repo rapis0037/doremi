@@ -15,6 +15,7 @@ Future<void> showMainSettings(
   required ValueChanged<bool> onVoiceChanged,
   required ValueChanged<bool> onSparklesChanged,
   Future<void> Function()? onSignOut,
+  Future<void> Function()? onDeleteAccount,
 }) async {
   var currentVoice = voiceOn;
   var currentSparkles = sparklesOn;
@@ -61,6 +62,7 @@ Future<void> showMainSettings(
                       account: account,
                       profile: profile,
                       onSignOut: onSignOut,
+                      onDeleteAccount: onDeleteAccount,
                     ),
                   ),
                   SettingsRow(
@@ -442,109 +444,213 @@ Future<void> _showAccountDialog(
   required AuthAccount account,
   GuardianProfile? profile,
   Future<void> Function()? onSignOut,
+  Future<void> Function()? onDeleteAccount,
 }) async {
   final provider = account.provider == SignInProvider.google
       ? 'Google'
       : 'Apple';
   final nickname = profile?.childNickname?.trim();
   final age = profile?.currentAge();
+  // 삭제는 되돌릴 수 없어서, 진행 중에는 다이얼로그를 열어 둔 채 상태를 보여주고
+  // 실패하면 같은 자리에서 이유를 알려 준다.
+  var deleting = false;
+  String? deleteError;
+
   await showDialog<void>(
     context: context,
-    builder: (accountContext) => Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+    barrierDismissible: !deleting,
+    builder: (accountContext) => StatefulBuilder(
+      builder: (builderContext, setLocal) => PopScope(
+        canPop: !deleting,
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 36),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(width: 50),
-                  const Expanded(
+                  Row(
+                    children: [
+                      const SizedBox(width: 50),
+                      const Expanded(
+                        child: Text(
+                          '로그인 정보',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: deleting
+                            ? null
+                            : () => Navigator.pop(accountContext),
+                        child: const Text('완료'),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: const Color(0xffffdce8),
                     child: Text(
-                      '로그인 정보',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 19,
+                      nickname?.isNotEmpty == true ? nickname![0] : '♪',
+                      style: const TextStyle(
+                        fontSize: 26,
                         fontWeight: FontWeight.w900,
+                        color: Color(0xffb72f5b),
                       ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(accountContext),
-                    child: const Text('완료'),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 8),
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: const Color(0xffffdce8),
-                child: Text(
-                  nickname?.isNotEmpty == true ? nickname![0] : '♪',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xffb72f5b),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                nickname?.isNotEmpty == true ? nickname! : '닉네임 미설정',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              if (age != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '$age세',
-                  style: const TextStyle(
-                    color: Color(0xff596775),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              _AccountInfoCard(
-                rows: [
-                  ('로그인 방식', provider),
-                  ('이메일', account.email ?? '제공되지 않음'),
-                  ('아이 닉네임', nickname?.isNotEmpty == true ? nickname! : '미설정'),
-                  ('아이 나이', age == null ? '미설정' : '$age세'),
-                ],
-              ),
-              if (onSignOut != null) ...[
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      final confirmed = await _confirmSignOut(accountContext);
-                      if (confirmed != true || !accountContext.mounted) return;
-                      Navigator.pop(accountContext);
-                      Navigator.pop(context);
-                      await onSignOut();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade700,
-                      side: BorderSide(color: Colors.red.shade200),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                    ),
-                    child: const Text(
-                      '로그아웃',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                  const SizedBox(height: 12),
+                  Text(
+                    nickname?.isNotEmpty == true ? nickname! : '닉네임 미설정',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-              ],
-            ],
+                  if (age != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '$age세',
+                      style: const TextStyle(
+                        color: Color(0xff596775),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  _AccountInfoCard(
+                    rows: [
+                      ('로그인 방식', provider),
+                      ('이메일', account.email ?? '제공되지 않음'),
+                      (
+                        '아이 닉네임',
+                        nickname?.isNotEmpty == true ? nickname! : '미설정',
+                      ),
+                      ('아이 나이', age == null ? '미설정' : '$age세'),
+                    ],
+                  ),
+                  if (onSignOut != null) ...[
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: deleting
+                            ? null
+                            : () async {
+                                final confirmed = await _confirmSignOut(
+                                  accountContext,
+                                );
+                                if (confirmed != true ||
+                                    !accountContext.mounted) {
+                                  return;
+                                }
+                                Navigator.pop(accountContext);
+                                Navigator.pop(context);
+                                await onSignOut();
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red.shade700,
+                          side: BorderSide(color: Colors.red.shade200),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        child: const Text(
+                          '로그아웃',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (onDeleteAccount != null) ...[
+                    const SizedBox(height: 18),
+                    const Divider(height: 1),
+                    const SizedBox(height: 14),
+                    const Text(
+                      '계정을 삭제하면 저장된 아이 닉네임과 나이,\n학습 설정이 모두 지워지고 되돌릴 수 없어요.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xff687582), height: 1.45),
+                    ),
+                    const SizedBox(height: 10),
+                    if (deleteError != null) ...[
+                      Text(
+                        deleteError!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w700,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: deleting
+                            ? null
+                            : () async {
+                                final confirmed = await _confirmDeleteAccount(
+                                  accountContext,
+                                );
+                                if (confirmed != true ||
+                                    !accountContext.mounted) {
+                                  return;
+                                }
+                                setLocal(() {
+                                  deleting = true;
+                                  deleteError = null;
+                                });
+                                try {
+                                  await onDeleteAccount();
+                                  if (!accountContext.mounted) return;
+                                  Navigator.pop(accountContext);
+                                  if (context.mounted) Navigator.pop(context);
+                                } on AuthFailure catch (failure) {
+                                  if (!accountContext.mounted) return;
+                                  setLocal(() {
+                                    deleting = false;
+                                    deleteError = failure.message;
+                                  });
+                                } catch (_) {
+                                  if (!accountContext.mounted) return;
+                                  setLocal(() {
+                                    deleting = false;
+                                    deleteError =
+                                        '계정을 삭제하지 못했어요.\n'
+                                        '인터넷 연결을 확인한 뒤 다시 시도해 주세요.';
+                                  });
+                                }
+                              },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        child: deleting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                '계정 삭제',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -620,6 +726,31 @@ Future<bool?> _confirmSignOut(BuildContext context) => showDialog<bool>(
       FilledButton(
         onPressed: () => Navigator.pop(context, true),
         child: const Text('로그아웃'),
+      ),
+    ],
+  ),
+);
+
+Future<bool?> _confirmDeleteAccount(BuildContext context) => showDialog<bool>(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: const Text('계정을 삭제할까요?'),
+    content: const Text(
+      '로그인 계정과 함께\n'
+      '아이 닉네임·나이, 학습 설정이\n'
+      '모두 삭제됩니다.\n\n'
+      '삭제한 정보는 되돌릴 수 없어요.',
+      style: TextStyle(height: 1.5),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, true),
+        style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+        child: const Text('삭제'),
       ),
     ],
   ),

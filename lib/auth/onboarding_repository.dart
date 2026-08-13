@@ -15,6 +15,10 @@ abstract class OnboardingRepository {
   );
 
   Future<GuardianProfile> complete(String uid);
+
+  /// 보호자 문서와 그 안의 아이 정보를 지운다. 계정 삭제의 일부라
+  /// 인증 계정이 살아 있는 동안(= 규칙이 통과하는 동안) 먼저 호출해야 한다.
+  Future<void> deleteProfile(String uid);
 }
 
 class FirebaseOnboardingRepository implements OnboardingRepository {
@@ -121,6 +125,9 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
     }, SetOptions(merge: true));
     return _read(uid);
   }
+
+  @override
+  Future<void> deleteProfile(String uid) => _guardian(uid).delete();
 
   Future<GuardianProfile> _read(String uid) async {
     final snapshot = await _guardian(uid).get();

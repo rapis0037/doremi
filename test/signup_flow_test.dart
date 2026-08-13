@@ -186,6 +186,13 @@ class _FakeAuthGateway implements AuthGateway {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<void> deleteAccount() async {
+    deletedAccount = true;
+  }
+
+  bool deletedAccount = false;
 }
 
 class _FakeOnboardingRepository implements OnboardingRepository {
@@ -251,4 +258,11 @@ class _FakeOnboardingRepository implements OnboardingRepository {
       settings: LearningSettings.fromPreference(SensoryPreference.unknown),
     );
   }
+
+  @override
+  Future<void> deleteProfile(String uid) async {
+    deletedProfileUid = uid;
+  }
+
+  String? deletedProfileUid;
 }

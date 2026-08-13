@@ -12,6 +12,10 @@ abstract class AuthGateway {
   Future<AuthAccount> signIn(SignInProvider provider);
 
   Future<void> signOut();
+
+  /// 로그인 계정 자체를 삭제한다. App Store 심사 지침 5.1.1(v) 요구사항이라
+  /// 앱 안에서 완결되어야 한다.
+  Future<void> deleteAccount();
 }
 
 class FirebaseAuthGateway implements AuthGateway {
@@ -82,6 +86,71 @@ class FirebaseAuthGateway implements AuthGateway {
       _firebaseAuth.signOut(),
       if (_googleInitialized) GoogleSignIn.instance.signOut(),
     ]);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw const AuthFailure(
+        AuthFailureKind.provider,
+        '로그인 정보를 확인할 수 없어요. 다시 로그인한 뒤 시도해 주세요.',
+      );
+    }
+    try {
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (error) {
+        // 마지막 로그인이 오래된 계정은 삭제 전에 본인 확인을 다시 요구한다.
+        if (error.code != 'requires-recent-login') rethrow;
+        await _reauthenticate(user);
+        await user.delete();
+      }
+    } on AuthFailure {
+      rethrow;
+    } on GoogleSignInException catch (error) {
+      throw _fromGoogleError(error);
+    } on FirebaseAuthException catch (error) {
+      throw _fromFirebaseError(error);
+    } on SocketException {
+      throw const AuthFailure(
+        AuthFailureKind.network,
+        '인터넷 연결을 확인한 뒤 다시 시도해 주세요.',
+      );
+    } catch (_) {
+      throw const AuthFailure(
+        AuthFailureKind.unknown,
+        '지금은 계정을 삭제할 수 없어요. 잠시 후 다시 시도해 주세요.',
+      );
+    }
+    // 계정은 사라졌지만 Google 세션은 기기에 남는다. 다음 로그인에서 계정 선택
+    // 화면이 건너뛰어지지 않도록 함께 끊는다.
+    if (_googleInitialized) {
+      await GoogleSignIn.instance.signOut();
+    }
+  }
+
+  Future<void> _reauthenticate(User user) async {
+    final provider = _accountFromUser(user)?.provider;
+    switch (provider) {
+      case SignInProvider.apple:
+        await user.reauthenticateWithProvider(AppleAuthProvider());
+      case SignInProvider.google:
+        if (!_googleInitialized) {
+          await GoogleSignIn.instance.initialize();
+          _googleInitialized = true;
+        }
+        final googleUser = await GoogleSignIn.instance.authenticate();
+        final googleAuth = googleUser.authentication;
+        await user.reauthenticateWithCredential(
+          GoogleAuthProvider.credential(idToken: googleAuth.idToken),
+        );
+      case null:
+        throw const AuthFailure(
+          AuthFailureKind.provider,
+          '본인 확인을 할 수 없어요. 다시 로그인한 뒤 시도해 주세요.',
+        );
+    }
   }
 
   AuthAccount? _accountFromUser(User? user) {
@@ -168,4 +237,9 @@ class UnavailableAuthGateway implements AuthGateway {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<void> deleteAccount() {
+    throw AuthFailure(AuthFailureKind.configuration, reason);
+  }
 }

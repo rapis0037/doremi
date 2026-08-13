@@ -24,6 +24,7 @@ class HomePage extends StatelessWidget {
     this.account,
     this.profile,
     this.onSignOut,
+    this.onDeleteAccount,
   });
   final VoidCallback onStageOne;
   final VoidCallback onStageTwo;
@@ -35,6 +36,7 @@ class HomePage extends StatelessWidget {
   final AuthAccount? account;
   final GuardianProfile? profile;
   final Future<void> Function()? onSignOut;
+  final Future<void> Function()? onDeleteAccount;
 
   List<Widget> _stepCards() => [
     StepCard(
@@ -89,6 +91,7 @@ class HomePage extends StatelessWidget {
                       onVoiceChanged: onVoiceChanged,
                       onSparklesChanged: onSparklesChanged,
                       onSignOut: onSignOut,
+                      onDeleteAccount: onDeleteAccount,
                     ),
                     // 세로에서는 헤더도 단계 카드 한 칸만큼 자리를 잡는다.
                     // 가로는 화면이 낮아 그대로 두면 본문이 눌린다.
