@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 class AppHeader extends StatelessWidget {
@@ -41,6 +43,25 @@ class AppHeader extends StatelessWidget {
 
   /// 기본 높이. 배경 스크림 등 바깥에서 높이를 맞출 때 쓴다.
   static const double defaultHeight = 68;
+
+  /// [contentOffsetY]로 내려 그린 글자가 헤더 상자 아래로 삐져나오는 높이.
+  ///
+  /// 헤더는 글자를 상자 안에 가두지 않고 [Transform.translate]로 내려 그린다.
+  /// 아래에 오는 콘텐츠가 이만큼을 비워 두지 않으면 글자를 덮는다.
+  static double contentOverflow({
+    required double height,
+    double contentScale = 1,
+    double contentOffsetY = 0,
+    double subtitleScale = 1,
+  }) {
+    if (contentOffsetY <= 0) return 0;
+    final scale = height / defaultHeight;
+    // Text 는 글꼴 크기의 약 1.2배 높이를 차지한다.
+    final title = 20 * scale * contentScale * 1.2;
+    final subtitle = 11 * scale * contentScale * subtitleScale * 1.2;
+    final block = title + 2 * scale + subtitle;
+    return math.max(0, contentOffsetY + block / 2 - height / 2);
+  }
 
   @override
   Widget build(BuildContext context) {

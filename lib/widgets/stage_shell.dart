@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_background.dart';
 import 'app_header.dart';
 import 'dialogs/sound_settings_dialog.dart';
+import 'scene_view.dart';
 
 class StageShell extends StatelessWidget {
   const StageShell({
@@ -79,7 +80,15 @@ class StageShell extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 2, 10, 0),
-              child: child,
+              child: StageInsets(
+                top: AppHeader.contentOverflow(
+                  height: headerHeight,
+                  contentScale: headerContentScale,
+                  contentOffsetY: headerContentOffsetY,
+                  subtitleScale: headerSubtitleScale,
+                ),
+                child: child,
+              ),
             ),
           ),
         ],

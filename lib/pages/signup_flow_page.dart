@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../auth/auth_gateway.dart';
@@ -461,17 +463,20 @@ class _WelcomeSignupPage extends StatelessWidget {
       child: SafeArea(
         child: Stack(
           children: [
+            // 첫 화면은 스크롤 없이 한눈에 보여야 한다. 태블릿 세로는 논리
+            // 캔버스가 4:3이라 세로가 모자라므로, 홈과 같은 방식으로 비율을
+            // 유지한 채 남는 높이에 맞춰 줄인다. 들어가는 화면에서는 배율이
+            // 1이라 폰 레이아웃은 그대로다.
             LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
+              builder: (context, constraints) => Padding(
                 padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 64,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: math.min(constraints.maxWidth - 56, 520),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Text(
                             '너두! 도레미!',
@@ -543,6 +548,7 @@ class _WelcomeSignupPage extends StatelessWidget {
                 ),
               ),
             ),
+
             if (busy)
               const Positioned(
                 top: 12,

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../auth/auth_models.dart';
@@ -10,6 +12,9 @@ import '../widgets/step_card.dart';
 
 /// 세로 배치에서 카드가 지나치게 넓어지지 않도록 하는 상한.
 const double _contentMaxWidth = 460;
+
+/// 세로 배치의 바깥 여백.
+const EdgeInsets _tallPadding = EdgeInsets.fromLTRB(16, 8, 16, 24);
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -111,26 +116,43 @@ class HomePage extends StatelessWidget {
 
   //고양이 대가리 크기 조절 및 위치조절
   Widget _buildTall() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
-          child: Column(
-            children: [
-              // 작은 화면에서도 3단계 카드 하단이 잘리지 않도록 콘텐츠 묶음을
-              // 기존 위치보다 위로 당긴다.
-              const SizedBox(height: 68),
-              const SizedBox(
-                height: 190,
-                child: Center(child: CatFace(width: 198)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 홈은 스크롤 없이 한 화면에 다 보여야 한다. 폰에서는 그대로 들어가지만
+        // 태블릿 세로는 논리 캔버스가 4:3이라 세로가 모자란다(iPad 13" 기준
+        // 516x688dp). 폭 대신 세로가 부족한 것이므로, 비율을 유지한 채 남는
+        // 높이에 맞춰 통째로 줄인다 — 들어가는 화면에서는 배율이 1이라
+        // 폰·안드로이드 레이아웃은 지금 그대로다.
+        final width = math.min(
+          constraints.maxWidth - _tallPadding.horizontal,
+          _contentMaxWidth,
+        );
+        return Padding(
+          padding: _tallPadding,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: width,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 작은 화면에서도 3단계 카드 하단이 잘리지 않도록 콘텐츠
+                    // 묶음을 기존 위치보다 위로 당긴다.
+                    const SizedBox(height: 68),
+                    const SizedBox(
+                      height: 190,
+                      child: Center(child: CatFace(width: 198)),
+                    ),
+                    const SizedBox(height: StepCard.gap),
+                    ..._stepCards(),
+                  ],
+                ),
               ),
-              const SizedBox(height: StepCard.gap),
-              ..._stepCards(),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
