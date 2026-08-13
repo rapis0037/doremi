@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/auth_models.dart';
 import '../settings_row.dart';
@@ -65,10 +62,9 @@ Future<void> showMainSettings(
                       onDeleteAccount: onDeleteAccount,
                     ),
                   ),
-                  SettingsRow(
-                    label: '구독 관리',
-                    onTap: () => _showSubscriptionManagement(dialogContext),
-                  ),
+                  // '구독 관리'는 실제 상품이 없는 상태였다. 준비 중인 플랜을
+                  // 안내하고 구매 복원이 동작하지 않는 화면은 심사 지침
+                  // 2.1·3.1.1 에서 걸리므로 상품을 붙일 때까지 감춘다.
                 ],
                 _SectionLabel('학습 설정'),
                 SettingsRow(
@@ -146,186 +142,6 @@ Future<void> showMainSettings(
       ),
     ),
   );
-}
-
-Future<void> _showSubscriptionManagement(BuildContext context) async {
-  await showDialog<void>(
-    context: context,
-    builder: (subscriptionContext) => Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 50),
-                  const Expanded(
-                    child: Text(
-                      '구독 관리',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(subscriptionContext),
-                    child: const Text('완료'),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xfffff7fa),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xffffdce8)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '현재 플랜',
-                      style: TextStyle(
-                        color: Color(0xff596775),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      '무료 플랜',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '프리미엄 구독 플랜을 준비하고 있어요.',
-                        maxLines: 1,
-                        style: TextStyle(color: Color(0xff596775), height: 1.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              const _SubscriptionNotice(
-                icon: Icons.event_available_outlined,
-                title: '해지 후에도 이용 기간 보장',
-                body: '구독을 해지해도\n이미 결제한 이용 기간이 끝날 때까지\n프리미엄 기능을 사용할 수 있어요.',
-              ),
-              const _SubscriptionNotice(
-                icon: Icons.storefront_outlined,
-                title: '스토어에서 직접 관리',
-                body:
-                    '플랜과 결제 수단 변경, 구독 해지는\nApple 또는 Google 스토어에서\n직접 관리할 수 있어요.',
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () =>
-                      _openStoreSubscriptionManagement(subscriptionContext),
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      Platform.isIOS
-                          ? 'App Store에서 구독 관리'
-                          : 'Google Play에서 구독 관리',
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('구독 상품 연결이 완료되면 구매 복원을 사용할 수 있어요.'),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                  ),
-                  child: const Text('구매 복원'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _SubscriptionNotice extends StatelessWidget {
-  const _SubscriptionNotice({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 23),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 3),
-              Text(
-                body,
-                style: const TextStyle(color: Color(0xff596775), height: 1.4),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> _openStoreSubscriptionManagement(BuildContext context) async {
-  final uri = Platform.isIOS
-      ? Uri.parse('https://apps.apple.com/account/subscriptions')
-      : Uri.parse(
-          'https://play.google.com/store/account/subscriptions'
-          '?package=com.cheesetabby.doremi',
-        );
-  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-  if (!opened && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('스토어 구독 관리 화면을 열지 못했어요.')));
-  }
 }
 
 Future<void> _showGuardianSettings(

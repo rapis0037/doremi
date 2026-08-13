@@ -23,7 +23,8 @@ class ArModePage extends StatelessWidget {
     final wide = screenSize.width > screenSize.height;
     return StageShell(
       title: 'AR 톡톡! 한 음 만나기',
-      subtitle: '만나고 싶은 AR 방식을 골라보세요',
+      // 톡톡 Space 를 감추어 고를 것이 하나뿐이므로 '골라보세요'를 쓰지 않는다.
+      subtitle: '카메라를 켜고 한 음을 만나 보세요',
       soundOn: soundOn,
       onSoundChanged: onSoundChanged,
       onBack: onBack,
@@ -36,6 +37,10 @@ class ArModePage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
+            // 톡톡 Space('피아노 건반이 바닥이 되는 공간 AR')는 아직 구현되지
+            // 않았다. 눌러도 '준비 중' 안내만 뜨는 항목은 App Store 심사 지침
+            // 2.1(App Completeness)에서 지적하는 대상이라 출시 전까지 감춘다.
+            // 구현이 끝나면 이 자리에 ModeButton 을 다시 넣으면 된다.
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -45,16 +50,6 @@ class ArModePage extends StatelessWidget {
                   color: const Color(0xffffdbe8),
                   icon: Icons.camera_alt_outlined,
                   onTap: onLite,
-                ),
-                const SizedBox(height: StepCard.gap),
-                ModeButton(
-                  title: '톡톡 Space',
-                  subtitle: '피아노 건반이 바닥이 되는 공간 AR',
-                  color: const Color(0xffdff3ff),
-                  icon: Icons.view_in_ar_outlined,
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('톡톡 Space는 준비 중입니다')),
-                  ),
                 ),
               ],
             ),
