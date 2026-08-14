@@ -188,7 +188,7 @@ void drawNotePopup(
     canvas,
     note.label,
     Offset.zero,
-    fontSize: 68 * k,
+    fontSize: (note.index == 7 ? 52 : 68) * k,
     color: Colors.white,
     weight: FontWeight.w900,
   );

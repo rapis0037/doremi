@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../audio/tone_player.dart';
 import '../core/constants.dart';
+import '../core/models.dart';
 import '../layout/keyboard_layout.dart';
 import '../painters/challenge_painter.dart';
 import '../widgets/scene_view.dart';
@@ -13,10 +14,12 @@ import '../widgets/step_card.dart';
 class StageThreeDoPage extends StatefulWidget {
   const StageThreeDoPage({
     super.key,
+    required this.noteIndex,
     required this.soundOn,
     required this.onSoundChanged,
     required this.onBack,
   });
+  final int noteIndex;
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
   final VoidCallback onBack;
@@ -27,14 +30,14 @@ class StageThreeDoPage extends StatefulWidget {
 
 class _StageThreeDoPageState extends State<StageThreeDoPage>
     with TickerProviderStateMixin {
-  static const _home = Offset(400, 590);
+  static const _home = Offset(400, 660);
   final TonePlayer tone = TonePlayer();
   late final AnimationController _returnCtrl;
   late final AnimationController _guide;
   late final AnimationController _confetti;
   late final AnimationController _performance;
   late final AnimationController _popup;
-  final _keyboard = const KeyboardLayout(y: 24, height: 420, count: 5);
+  final _keyboard = const KeyboardLayout(y: 24, height: 420, count: 8);
   Offset _heart = _home;
   Offset _returnStart = _home;
   bool _dragging = false;
@@ -45,6 +48,8 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
   int _activeNote = -1;
   int _lastPlayed = -1;
   Timer? _popupTimer;
+
+  NoteSpec get _note => notes[widget.noteIndex];
 
   @override
   void initState() {
@@ -100,7 +105,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
       _lastPlayed = index;
       // 600ms마다 다시 울리며 앞 음을 끊으므로 앞 네 번은 짧게, 마지막 한 번만
       // 길게 남는다.
-      tone.playNote(notes.first);
+      tone.playNote(_note);
     }
     setState(() => _activeNote = index);
   }
@@ -136,9 +141,10 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
     });
   }
 
-  bool _nearHeart(Offset point) => (point - _heart).distance < 76;
-  bool _inDoTarget(Offset point) =>
-      _keyboard.whiteKeyRect(0).inflate(24).contains(point);
+  bool _nearHeart(Offset point) =>
+      (point - _heart).distance < ChallengePainter.selectionRingRadius;
+  bool _inTarget(Offset point) =>
+      _keyboard.whiteKeyRect(_note.index).inflate(24).contains(point);
 
   void _accept() {
     if (_fixed) return;
@@ -147,8 +153,8 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
       _chosen = false;
       _dragging = false;
       _showScore = true;
-      _heart = _keyboard.iconCenter(0);
-      _activeNote = 0;
+      _heart = _keyboard.iconCenter(_note.index);
+      _activeNote = _note.index;
       _lastPlayed = -1;
     });
     _confetti.forward(from: 0);
@@ -168,7 +174,10 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
 
   void _onTap(Offset point) {
     if (_showPopup) {
-      if ((point - const Offset(400, 460)).distance < 140) _reset();
+      if ((point - const Offset(400, 460)).distance <
+          ChallengePainter.completionPopupRadius) {
+        _reset();
+      }
       return;
     }
     if (_fixed) return;
@@ -178,7 +187,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
     }
     if (_chosen) {
       _heart = point;
-      _inDoTarget(point) ? _accept() : _reject();
+      _inTarget(point) ? _accept() : _reject();
     }
   }
 
@@ -197,7 +206,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
 
   void _onPanEnd() {
     if (!_dragging || _fixed) return;
-    _inDoTarget(_heart) ? _accept() : _reject();
+    _inTarget(_heart) ? _accept() : _reject();
   }
 
   @override
@@ -205,8 +214,8 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
     final screenSize = MediaQuery.sizeOf(context);
     final wide = screenSize.width > screenSize.height;
     return StageShell(
-      title: '도 음정 끌어놓기',
-      subtitle: '핑크 하트를 도 건반으로 옮겨보세요',
+      title: '${_note.label} 음정 끌어놓기',
+      subtitle: '${_note.label} 도형을 ${_note.label} 건반으로 옮겨보세요',
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
       onBack: widget.onBack,
@@ -228,6 +237,7 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
             onPanEnd: _onPanEnd,
             painter: ChallengePainter(
               keyboard: _keyboard,
+              note: _note,
               heart: _heart,
               chosen: _chosen,
               fixed: _fixed,

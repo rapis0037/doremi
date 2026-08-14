@@ -12,8 +12,13 @@ import '../drawing/staff_drawing.dart';
 import '../layout/keyboard_layout.dart';
 
 class ChallengePainter extends CustomPainter {
+  static const double draggableHeartSize = 184;
+  static const double selectionRingRadius = 122;
+  static const double completionPopupRadius = basePopupRadius * 2;
+
   const ChallengePainter({
     required this.keyboard,
+    required this.note,
     required this.heart,
     required this.chosen,
     required this.fixed,
@@ -26,6 +31,7 @@ class ChallengePainter extends CustomPainter {
     required this.popupProgress,
   });
   final KeyboardLayout keyboard;
+  final NoteSpec note;
   final Offset heart;
   final bool chosen;
   final bool fixed;
@@ -44,8 +50,8 @@ class ChallengePainter extends CustomPainter {
     drawKeyboard(
       canvas,
       keyboard,
-      noteList: notes.take(5).toList(),
-      labelsOnlyIndex: 0,
+      noteList: notes,
+      labelsOnlyIndex: note.index,
       glowIndex: glow > 0 ? 0 : null,
       glow: glow,
     );
@@ -53,18 +59,26 @@ class ChallengePainter extends CustomPainter {
     if (chosen && !fixed) {
       canvas.drawCircle(
         heart,
-        68,
+        selectionRingRadius,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 6
-          ..color = notes.first.color.withValues(alpha: .34),
+          ..color = note.color.withValues(alpha: .34),
       );
     }
-    drawShape(canvas, NoteShape.heart, heart, fixed ? 54 : 88, notes.first.color);
+    drawShape(
+      canvas,
+      note.shape,
+      heart,
+      fixed ? 104 : draggableHeartSize,
+      note.color,
+    );
     if (confettiProgress > 0 && confettiProgress < 1) {
       drawConfetti(canvas, confettiProgress);
     }
-    if (showPopup) drawNotePopup(canvas, notes.first, popupProgress);
+    if (showPopup) {
+      drawNotePopup(canvas, note, popupProgress, radius: completionPopupRadius);
+    }
   }
 
   @override

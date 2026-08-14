@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants.dart';
 import '../layout/keyboard_layout.dart';
 import '../painters/selection_painter.dart';
 import '../widgets/scene_view.dart';
@@ -23,15 +24,17 @@ class StageThreeFlowPage extends StatefulWidget {
 }
 
 class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
-  bool _challenge = false;
+  int? _challengeNoteIndex;
 
   @override
   Widget build(BuildContext context) {
-    if (_challenge) {
+    final challengeNoteIndex = _challengeNoteIndex;
+    if (challengeNoteIndex != null) {
       return StageThreeDoPage(
+        noteIndex: challengeNoteIndex,
         soundOn: widget.soundOn,
         onSoundChanged: widget.onSoundChanged,
-        onBack: () => setState(() => _challenge = false),
+        onBack: () => setState(() => _challengeNoteIndex = null),
       );
     }
     final screenSize = MediaQuery.sizeOf(context);
@@ -40,7 +43,7 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
     final keyboard = KeyboardLayout(y: 320, height: 350, count: 8);
     return StageShell(
       title: '음정 챌린지!',
-      subtitle: '핑크 하트 도를 눌러 시작해요',
+      subtitle: '연습할 음을 눌러 시작해요',
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
       onBack: widget.onExit,
@@ -51,12 +54,12 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
         child: SceneView(
           onTap: (point) {
             final index = keyboard.hitWhiteKey(point);
-            if (index == 0) {
-              setState(() => _challenge = true);
-            } else if (index != null) {
+            if (index != null && index < notes.length) {
+              setState(() => _challengeNoteIndex = index);
+            } else {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('도 핑크 하트를 눌러보세요')));
+              ).showSnackBar(const SnackBar(content: Text('음 도형을 눌러보세요')));
             }
           },
           painter: SelectionPainter(keyboard: keyboard),

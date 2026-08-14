@@ -101,8 +101,8 @@ void drawKeyboard(
       drawCenteredText(
         canvas,
         note.label,
-        Offset(rect.center.dx, rect.bottom - 35),
-        fontSize: note.index == 7 ? 21 : 25,
+        Offset(rect.center.dx, rect.bottom - 55),
+        fontSize: note.index == 7 ? 21 : 70,
         color: const Color(0xff34383c),
         weight: FontWeight.w900,
       );

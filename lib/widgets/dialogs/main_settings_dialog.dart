@@ -120,7 +120,7 @@ Future<void> showMainSettings(
                         '개발자\n'
                         '윤요한\n\n'
                         '기획자\n'
-                        '전한나\n\n'
+                        '전한나 박수영\n\n'
                         '대표 이메일 및 고객지원 문의\n'
                         'cheesetabby.ent@gmail.com\n\n'
                         '고객지원 이메일\n'
