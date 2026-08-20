@@ -9,5 +9,17 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && request.auth.uid == guardianId;
     }
+
+    // 구독 권한은 서버(Cloud Functions)가 스토어에 확인한 결과만 적는다.
+    // 앱은 읽기만 할 수 있어, 앱을 고쳐도 유료 잠금을 열 수 없다.
+    match /subscriptions/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // 영수증 소유권 기록. 앱에서는 읽지도 쓰지도 않는다.
+    match /purchaseReceipts/{fingerprint} {
+      allow read, write: if false;
+    }
   }
 }

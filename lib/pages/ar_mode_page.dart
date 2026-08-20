@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants.dart';
 import '../widgets/mode_button.dart';
 import '../widgets/stage_shell.dart';
 import '../widgets/step_card.dart';
@@ -11,11 +12,13 @@ class ArModePage extends StatelessWidget {
     required this.onSoundChanged,
     required this.onBack,
     required this.onLite,
+    required this.onSpace,
   });
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
   final VoidCallback onBack;
   final VoidCallback onLite;
+  final VoidCallback onSpace;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +38,7 @@ class ArModePage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: kCardMaxWidth),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -52,9 +55,7 @@ class ArModePage extends StatelessWidget {
                   subtitle: '피아노 건반이 바닥이 되는 공간 AR',
                   color: const Color(0xffdff3ff),
                   icon: Icons.view_in_ar_outlined,
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('톡톡 Space는 준비 중입니다')),
-                  ),
+                  onTap: onSpace,
                 ),
               ],
             ),

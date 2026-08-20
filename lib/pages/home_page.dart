@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants.dart';
 import '../auth/auth_models.dart';
 import '../core/models.dart';
+import '../subscription/subscription_controller.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_header.dart';
 import '../widgets/cat_face.dart';
 import '../widgets/dialogs/main_settings_dialog.dart';
 import '../widgets/step_card.dart';
-
-/// 세로 배치에서 카드가 지나치게 넓어지지 않도록 하는 상한.
-const double _contentMaxWidth = 460;
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -23,6 +22,7 @@ class HomePage extends StatelessWidget {
     required this.onSparklesChanged,
     this.account,
     this.profile,
+    this.subscription,
     this.onSignOut,
     this.onDeleteAccount,
   });
@@ -35,6 +35,7 @@ class HomePage extends StatelessWidget {
   final ValueChanged<bool> onSparklesChanged;
   final AuthAccount? account;
   final GuardianProfile? profile;
+  final SubscriptionController? subscription;
   final Future<void> Function()? onSignOut;
   final Future<void> Function()? onDeleteAccount;
 
@@ -86,6 +87,7 @@ class HomePage extends StatelessWidget {
                       context,
                       account: account,
                       profile: profile,
+                      subscription: subscription,
                       voiceOn: voiceOn,
                       sparklesOn: sparklesOn,
                       onVoiceChanged: onVoiceChanged,
@@ -99,6 +101,8 @@ class HomePage extends StatelessWidget {
                     contentScale: wide ? 1 : 1.3,
                     contentOffsetY: 60,
                   ),
+                  if (subscription != null)
+                    _SubscriptionStatusBanner(subscription: subscription!),
                   Expanded(child: wide ? _buildWide() : _buildTall()),
                 ],
               );
@@ -115,7 +119,7 @@ class HomePage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+          constraints: const BoxConstraints(maxWidth: kCardMaxWidth),
           child: Column(
             children: [
               // 작은 화면에서도 3단계 카드 하단이 잘리지 않도록 콘텐츠 묶음을
@@ -152,7 +156,7 @@ class HomePage extends StatelessWidget {
             flex: 6,
             child: _VerticallyCenteredScroll(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+                constraints: const BoxConstraints(maxWidth: kCardMaxWidth),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: _stepCards(),
@@ -161,6 +165,42 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionStatusBanner extends StatelessWidget {
+  const _SubscriptionStatusBanner({required this.subscription});
+
+  final SubscriptionController subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final subscribed = subscription.isSubscribed;
+    final trialActive = subscription.trialActive;
+    final text = subscribed
+        ? '프리미엄 구독 이용 중'
+        : trialActive
+        ? '무료 이용 ${subscription.remainingTrialDays}일 남음 · 종료 후 자동 결제되지 않아요'
+        : '무료 이용 종료 · 학습을 계속하려면 구독이 필요해요';
+    final background = subscribed || trialActive
+        ? const Color(0xfffff7fa)
+        : const Color(0xffffecec);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }

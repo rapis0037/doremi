@@ -3,13 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants.dart';
 import '../../auth/auth_models.dart';
+import '../../subscription/subscription_controller.dart';
 import '../settings_row.dart';
 
 Future<void> showMainSettings(
   BuildContext context, {
   AuthAccount? account,
   GuardianProfile? profile,
+  SubscriptionController? subscription,
   required bool voiceOn,
   required bool sparklesOn,
   required ValueChanged<bool> onVoiceChanged,
@@ -27,7 +30,7 @@ Future<void> showMainSettings(
         insetPadding: const EdgeInsets.symmetric(horizontal: 36),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: kDialogMaxWidth),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
             child: Column(
@@ -66,8 +69,19 @@ Future<void> showMainSettings(
                     ),
                   ),
                   SettingsRow(
-                    label: '구독 관리',
-                    onTap: () => _showSubscriptionManagement(dialogContext),
+                    label: subscription?.isSubscribed == true
+                        ? '구독 관리'
+                        : '프리미엄 구독',
+                    onTap: subscription == null
+                        ? () => _showInfoDialog(
+                            dialogContext,
+                            title: '구독 안내',
+                            body: '구독 정보를 확인할 수 없어요. 다시 로그인해 주세요.',
+                          )
+                        : () => showSubscriptionManagement(
+                            dialogContext,
+                            subscription: subscription,
+                          ),
                   ),
                 ],
                 _SectionLabel('학습 설정'),
@@ -91,6 +105,18 @@ Future<void> showMainSettings(
                   },
                 ),
                 const Divider(),
+                SettingsRow(
+                  label: '이용약관',
+                  onTap: () => _showInfoDialog(
+                    dialogContext,
+                    title: '이용약관',
+                    body:
+                        '프리미엄 구독은 월 단위로 자동 갱신됩니다.\n\n'
+                        '구독 취소는 Apple 또는 Google 스토어에서 할 수 있으며, '
+                        '취소 후에도 현재 결제 기간이 끝날 때까지 이용할 수 있습니다.\n\n'
+                        '결제와 환불에는 이용한 스토어의 정책이 적용됩니다.',
+                  ),
+                ),
                 SettingsRow(
                   label: '개인정보 처리 안내',
                   onTap: () => _showInfoDialog(
@@ -148,132 +174,234 @@ Future<void> showMainSettings(
   );
 }
 
-Future<void> _showSubscriptionManagement(BuildContext context) async {
+Future<void> showSubscriptionManagement(
+  BuildContext context, {
+  required SubscriptionController subscription,
+}) async {
   await showDialog<void>(
     context: context,
-    builder: (subscriptionContext) => Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 50),
-                  const Expanded(
-                    child: Text(
-                      '구독 관리',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(subscriptionContext),
-                    child: const Text('완료'),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xfffff7fa),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xffffdce8)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    builder: (subscriptionContext) => AnimatedBuilder(
+      animation: subscription,
+      builder: (context, _) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kDialogMaxWidth),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      '현재 플랜',
-                      style: TextStyle(
-                        color: Color(0xff596775),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      '무료 플랜',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
+                    const SizedBox(width: 50),
+                    const Expanded(
                       child: Text(
-                        '프리미엄 구독 플랜을 준비하고 있어요.',
-                        maxLines: 1,
-                        style: TextStyle(color: Color(0xff596775), height: 1.4),
+                        '구독 관리',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(subscriptionContext),
+                      child: const Text('완료'),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 14),
-              const _SubscriptionNotice(
-                icon: Icons.event_available_outlined,
-                title: '해지 후에도 이용 기간 보장',
-                body: '구독을 해지해도\n이미 결제한 이용 기간이 끝날 때까지\n프리미엄 기능을 사용할 수 있어요.',
-              ),
-              const _SubscriptionNotice(
-                icon: Icons.storefront_outlined,
-                title: '스토어에서 직접 관리',
-                body:
-                    '플랜과 결제 수단 변경, 구독 해지는\nApple 또는 Google 스토어에서\n직접 관리할 수 있어요.',
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () =>
-                      _openStoreSubscriptionManagement(subscriptionContext),
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      Platform.isIOS
-                          ? 'App Store에서 구독 관리'
-                          : 'Google Play에서 구독 관리',
-                    ),
+                const Divider(),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffff7fa),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xffffdce8)),
                   ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '현재 플랜',
+                        style: TextStyle(
+                          color: Color(0xff596775),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subscription.isSubscribed
+                            ? '프리미엄 월간 구독'
+                            : subscription.trialActive
+                            ? '14일 무료 이용 중'
+                            : '무료 이용 종료',
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          subscription.isSubscribed
+                              ? subscription.priceLabel == null
+                                    ? '월간 · 자동 갱신'
+                                    : '${subscription.priceLabel}/월 · 자동 갱신'
+                              : subscription.trialActive
+                              ? '${_formatDate(subscription.trialStartedAt)} 시작 · '
+                                    '${_formatDate(subscription.trialEndsAt)} 종료 · '
+                                    '${subscription.remainingTrialDays}일 남음'
+                              : '3개 학습 콘텐츠 이용이 제한됩니다.',
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Color(0xff596775),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('구독 상품 연결이 완료되면 구매 복원을 사용할 수 있어요.'),
+                const SizedBox(height: 14),
+                const _SubscriptionNotice(
+                  icon: Icons.lock_open_rounded,
+                  title: '구독 시 제공되는 기능',
+                  body: '한 음 익히기, AR 한 음 만나기,\n음정 챌린지를 제한 없이 이용할 수 있어요.',
+                ),
+                if (!subscription.isSubscribed)
+                  const _SubscriptionNotice(
+                    icon: Icons.credit_card_off_outlined,
+                    title: '무료 이용 후 자동 결제 없음',
+                    body:
+                        '14일 무료 이용이 끝나도 자동 결제되지 않아요.\n계속 이용하려는 경우에만 직접 구독해 주세요.',
+                  ),
+                const _SubscriptionNotice(
+                  icon: Icons.event_available_outlined,
+                  title: '해지 후에도 이용 기간 보장',
+                  body: '구독을 해지해도\n이미 결제한 이용 기간이 끝날 때까지\n프리미엄 기능을 사용할 수 있어요.',
+                ),
+                const _SubscriptionNotice(
+                  icon: Icons.storefront_outlined,
+                  title: '스토어에서 직접 관리',
+                  body:
+                      '플랜과 결제 수단 변경, 구독 해지는\nApple 또는 Google 스토어에서\n직접 관리할 수 있어요.',
+                ),
+                const SizedBox(height: 16),
+                if (!subscription.isSubscribed) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      // 가격을 아직 못 받았으면 결제를 시작할 수 없다.
+                      onPressed: subscription.canPurchase
+                          ? subscription.purchase
+                          : null,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: subscription.purchasePending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              subscription.priceLabel == null
+                                  ? '가격 확인 중'
+                                  : '${subscription.priceLabel}/월 구독하기',
+                            ),
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '구독은 월 단위로 자동 갱신되며 언제든지 스토어에서 취소할 수 있습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xff596775),
+                      height: 1.4,
+                    ),
                   ),
-                  child: const Text('구매 복원'),
+                  const SizedBox(height: 10),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        _openStoreSubscriptionManagement(subscriptionContext),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        Platform.isIOS
+                            ? 'App Store에서 구독 관리'
+                            : 'Google Play에서 구독 관리',
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: subscription.purchasePending
+                        ? null
+                        : subscription.restore,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                    child: const Text('구매 복원'),
+                  ),
+                ),
+                if (subscription.errorMessage != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    subscription.errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                // 복원 결과를 알려 주지 않으면 버튼이 먹통인 것처럼 보인다.
+                if (subscription.statusMessage != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    subscription.statusMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xff2f7a4d),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     ),
   );
+}
+
+String _formatDate(DateTime date) {
+  final local = date.toLocal();
+  return '${local.year}년 ${local.month}월 ${local.day}일';
 }
 
 class _SubscriptionNotice extends StatelessWidget {
@@ -345,7 +473,7 @@ Future<void> _showGuardianSettings(
         insetPadding: const EdgeInsets.symmetric(horizontal: 36),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: kDialogMaxWidth),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
             child: Column(
@@ -464,9 +592,11 @@ Future<void> _showAccountDialog(
         canPop: !deleting,
         child: Dialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 36),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
+            constraints: const BoxConstraints(maxWidth: kDialogMaxWidth),
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
               child: Column(
@@ -766,7 +896,7 @@ Future<void> _showInfoDialog(
     insetPadding: const EdgeInsets.symmetric(horizontal: 36),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 360),
+      constraints: const BoxConstraints(maxWidth: kDialogMaxWidth),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
         child: Column(

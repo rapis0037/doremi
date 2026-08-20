@@ -12,8 +12,14 @@ import 'pages/home_page.dart';
 import 'pages/lesson_flow_page.dart';
 import 'pages/signup_flow_page.dart';
 import 'pages/sensory_setup_page.dart';
+import 'pages/space_page.dart';
 import 'pages/stage_three_flow_page.dart';
+import 'subscription/entitlement.dart';
+import 'subscription/subscription_backend.dart';
+import 'subscription/subscription_controller.dart';
+import 'subscription/trial_period.dart';
 import 'widgets/responsive_viewport.dart';
+import 'widgets/dialogs/main_settings_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,6 +129,9 @@ class _AuthenticatedEntryState extends State<_AuthenticatedEntry> {
         preferences: widget.preferences,
         account: widget.authGateway.currentAccount,
         profile: _profile,
+        // 로그인을 거친 앱에서는 계정 정보를 못 읽더라도 학습 콘텐츠가
+        // 그냥 열려서는 안 된다.
+        requiresPremium: true,
         onSignOut: _signOut,
         onDeleteAccount: _deleteAccount,
       );
@@ -170,6 +179,7 @@ class MusicLearningPage extends StatefulWidget {
     this.preferences,
     this.account,
     this.profile,
+    this.requiresPremium = false,
     this.onSignOut,
     this.onDeleteAccount,
   });
@@ -177,6 +187,10 @@ class MusicLearningPage extends StatefulWidget {
   final SharedPreferences? preferences;
   final AuthAccount? account;
   final GuardianProfile? profile;
+
+  /// 유료 콘텐츠를 구독·무료 체험으로만 열지 여부. 로그인 없이 띄우는
+  /// 테스트·데모 실행에서만 false 다.
+  final bool requiresPremium;
   final Future<void> Function()? onSignOut;
   final Future<void> Function()? onDeleteAccount;
 
@@ -186,6 +200,7 @@ class MusicLearningPage extends StatefulWidget {
 
 class _MusicLearningPageState extends State<MusicLearningPage> {
   RootPage _page = RootPage.home;
+  SubscriptionController? _subscriptionController;
   late bool _voiceOn;
   late bool _sparklesOn;
   late bool _needsSensorySetup;
@@ -198,9 +213,83 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
     _needsSensorySetup =
         widget.preferences != null &&
         !(widget.preferences!.getBool('sensory_setup_complete') ?? false);
+    _configureSubscription();
+  }
+
+  @override
+  void didUpdateWidget(covariant MusicLearningPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.account?.uid != widget.account?.uid ||
+        oldWidget.account?.createdAt != widget.account?.createdAt) {
+      _configureSubscription();
+    }
+  }
+
+  void _configureSubscription() {
+    _subscriptionController?.removeListener(_refreshSubscription);
+    _subscriptionController?.dispose();
+    if (!widget.requiresPremium) {
+      _subscriptionController = null;
+      return;
+    }
+    // 계정 생성 시각(Firebase metadata)은 비어 올 수 있다. 그때 컨트롤러를
+    // 만들지 않으면 유료 콘텐츠가 통째로 열리므로, 기기에 남겨 둔 첫 실행
+    // 시각으로 체험 시작일을 정한다.
+    final createdAt = earliestTrialStart(
+      _deviceFirstSeenAt(),
+      widget.account?.createdAt,
+    );
+    final uid = widget.account?.uid;
+    final controller = SubscriptionController(
+      accountCreatedAt: createdAt,
+      // 서버가 스토어에 확인한 결과로만 유료 잠금을 연다. Firebase 가 붙지
+      // 않은 실행에서는 스토어 응답만 보고 판단한다.
+      backend: uid != null && Firebase.apps.isNotEmpty
+          ? FirebaseSubscriptionBackend(uid: uid)
+          : null,
+      accountToken: uid == null ? null : accountTokenFor(uid),
+      preferences: widget.preferences,
+      entitlementKey: uid,
+    );
+    _subscriptionController = controller;
+    controller.addListener(_refreshSubscription);
+    controller.initialize();
+  }
+
+  /// 이 기기에서 앱을 처음 켠 시각. 로그아웃·탈퇴로 지우지 않아, 재가입해도
+  /// 체험 기간이 다시 시작되지 않는다.
+  DateTime _deviceFirstSeenAt() {
+    final preferences = widget.preferences;
+    final stored = preferences?.getInt('trial_started_at');
+    if (stored != null) return DateTime.fromMillisecondsSinceEpoch(stored);
+    final now = DateTime.now();
+    preferences?.setInt('trial_started_at', now.millisecondsSinceEpoch);
+    return now;
+  }
+
+  void _refreshSubscription() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _subscriptionController?.removeListener(_refreshSubscription);
+    _subscriptionController?.dispose();
+    super.dispose();
   }
 
   void _open(RootPage next) => setState(() => _page = next);
+
+  void _openPremiumContent(RootPage next) {
+    final subscription = _subscriptionController;
+    // 컨트롤러가 없는 경우는 유료 잠금을 쓰지 않는 실행뿐이다.
+    if (subscription == null || subscription.hasPremiumAccess) {
+      _open(next);
+      return;
+    }
+    showSubscriptionManagement(context, subscription: subscription);
+  }
+
   void _setVoice(bool value) {
     setState(() => _voiceOn = value);
     widget.preferences?.setBool('voice_on', value);
@@ -223,7 +312,7 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
   }
 
   void _handleSystemBack() {
-    if (_page == RootPage.arLite) {
+    if (_page == RootPage.arLite || _page == RootPage.arSpace) {
       _open(RootPage.arModes);
     } else if (_page != RootPage.home) {
       _open(RootPage.home);
@@ -249,15 +338,16 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
       case RootPage.home:
         return _withSystemBackHandler(
           HomePage(
-            onStageOne: () => _open(RootPage.stageOne),
-            onStageTwo: () => _open(RootPage.arModes),
-            onStageThree: () => _open(RootPage.stageThree),
+            onStageOne: () => _openPremiumContent(RootPage.stageOne),
+            onStageTwo: () => _openPremiumContent(RootPage.arModes),
+            onStageThree: () => _openPremiumContent(RootPage.stageThree),
             voiceOn: _voiceOn,
             sparklesOn: _sparklesOn,
             onVoiceChanged: _setVoice,
             onSparklesChanged: _setSparkles,
             account: widget.account,
             profile: widget.profile,
+            subscription: _subscriptionController,
             onSignOut: widget.onSignOut,
             onDeleteAccount: widget.onDeleteAccount,
           ),
@@ -280,7 +370,12 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
             onSoundChanged: _setVoice,
             onBack: () => _open(RootPage.home),
             onLite: () => _open(RootPage.arLite),
+            onSpace: () => _open(RootPage.arSpace),
           ),
+        );
+      case RootPage.arSpace:
+        return _withSystemBackHandler(
+          SpacePage(onExit: () => _open(RootPage.arModes)),
         );
       case RootPage.arLite:
         return _withSystemBackHandler(

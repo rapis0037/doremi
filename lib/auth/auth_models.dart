@@ -6,12 +6,14 @@ class AuthAccount {
     required this.provider,
     required this.providerSubject,
     this.email,
+    this.createdAt,
   });
 
   final String uid;
   final SignInProvider provider;
   final String providerSubject;
   final String? email;
+  final DateTime? createdAt;
 }
 
 enum AuthFailureKind {

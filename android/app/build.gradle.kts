@@ -32,7 +32,7 @@ android {
         applicationId = "com.cheesetabby.doremi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -69,4 +69,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // 손 추적 네이티브 모듈. 프레임을 받아 랜드마크만 돌려준다.
+    implementation(project(":hand_tracking"))
 }

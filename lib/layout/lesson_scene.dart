@@ -76,6 +76,11 @@ class LessonScene {
   /// 음표가 놓이는 지점 — 오선 폭에 대한 비율.
   static const double _noteOffsetRatio = 358 / portraitStaffWidth;
 
+  /// 세로 화면 건반 상자의 높이. 음을 고를 때와 연습할 때가 다르다.
+  /// 가로 건반은 이 상자를 비율 그대로 확대·축소해서 만든다.
+  static const double pickingKeyboardHeight = 350;
+  static const double practiceKeyboardHeight = 300;
+
   static const double landscapeWidth = 1400;
   static const double landscapeHeight = 480;
   static const Size portraitSize = Size(800, 920);
@@ -96,9 +101,7 @@ class LessonScene {
   static int _keyCount(NoteSpec? selected) =>
       selected != null && selected.index < 5 ? 5 : 8;
 
-  static LessonScene _portrait({
-    required NoteSpec? selected,
-  }) {
+  static LessonScene _portrait({required NoteSpec? selected}) {
     final picking = selected == null;
     final canvas = picking ? portraitSize : portraitPracticeSize;
     return LessonScene._(
@@ -113,7 +116,7 @@ class LessonScene {
         // 선택 화면은 기존 크기를 유지하고, 연습 화면은 세로로 키워 장면 하단에 붙인다.
         // 일반 연습과 톡톡 Lite 연습은 같은 건반 크기와 위치를 사용한다.
         y: picking ? 320 : 920,
-        height: picking ? 350 : 300,
+        height: picking ? pickingKeyboardHeight : practiceKeyboardHeight,
         count: _keyCount(selected),
       ),
       popupCenter: Offset(canvas.width / 2, canvas.height / 2),
@@ -121,18 +124,22 @@ class LessonScene {
     );
   }
 
-  /// 건반 하나의 가로세로 비율을 세로 화면과 똑같이 유지한 채, 주어진 상자를
-  /// 채우는 건반을 만든다. 폭을 상자에 맞춰 늘리면 흰 건반이 납작해지므로
-  /// 높이를 기준으로 폭을 역산한다.
+  /// 세로 화면 건반 상자([reference])를 비율 그대로 확대·축소해 [box] 안에
+  /// 채우는 건반을 만든다.
+  ///
+  /// 상자 비율에 맞춰 폭과 높이를 따로 늘리면 흰 건반이 납작해진다. 가로·세로
+  /// 배율을 하나로 묶어야 건반 하나의 가로세로 비율이 세로 화면과 같아진다.
   static KeyboardLayout _fittedKeyboard({
     required Rect box,
+    required Size reference,
     required int count,
   }) {
-    final width = math.min(
-      KeyboardLayout.widthForHeight(box.height),
-      box.width,
+    final scale = math.min(
+      box.width / reference.width,
+      box.height / reference.height,
     );
-    final height = KeyboardLayout.heightForWidth(width);
+    final width = reference.width * scale;
+    final height = reference.height * scale;
     return KeyboardLayout(
       x: box.left + (box.width - width) / 2,
       y: box.top + (box.height - height) / 2,
@@ -175,7 +182,14 @@ class LessonScene {
       staffY: staffBoxTop + 42 * staffZoom,
       staffWidth: staffWidth,
       staffScale: staffZoom,
-      keyboard: _fittedKeyboard(box: keyboardBox, count: _keyCount(selected)),
+      keyboard: _fittedKeyboard(
+        box: keyboardBox,
+        reference: Size(
+          KeyboardLayout.referenceWidth,
+          picking ? pickingKeyboardHeight : practiceKeyboardHeight,
+        ),
+        count: _keyCount(selected),
+      ),
       popupCenter: const Offset(landscapeWidth / 2, landscapeHeight / 2),
       popupRadius: _popupRadiusFor(landscapeSize),
     );

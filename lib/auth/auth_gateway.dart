@@ -169,6 +169,7 @@ class FirebaseAuthGateway implements AuthGateway {
           : SignInProvider.google,
       providerSubject: identity.uid ?? user.uid,
       email: identity.email ?? user.email,
+      createdAt: user.metadata.creationTime,
     );
   }
 

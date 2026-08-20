@@ -394,7 +394,7 @@ class _LessonFlowPageState extends State<LessonFlowPage>
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: const BoxConstraints(maxWidth: kNoticeMaxWidth),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(

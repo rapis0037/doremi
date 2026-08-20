@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants.dart';
 import '../auth/auth_gateway.dart';
 import '../auth/auth_models.dart';
 import '../auth/onboarding_repository.dart';
@@ -466,11 +467,16 @@ class _WelcomeSignupPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 64,
+                    minHeight: (constraints.maxHeight - 64).clamp(
+                      0.0,
+                      double.infinity,
+                    ),
                   ),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
+                      constraints: const BoxConstraints(
+                        maxWidth: kWelcomeMaxWidth,
+                      ),
                       child: Column(
                         children: [
                           const Text(
@@ -611,11 +617,15 @@ class _SignupScaffold extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 30),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 200,
+                  // 첫 프레임에는 maxHeight가 0으로 들어와 음수가 된다.
+                  minHeight: (constraints.maxHeight - 200).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
+                    constraints: const BoxConstraints(maxWidth: kFormMaxWidth),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,

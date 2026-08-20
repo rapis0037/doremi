@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum RootPage { home, stageOne, arModes, arLite, stageThree }
+enum RootPage { home, stageOne, arModes, arLite, arSpace, stageThree }
 
 enum NoteShape { heart, circle, star, triangle, apple, flower, cloud }
 

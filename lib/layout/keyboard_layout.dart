@@ -14,21 +14,12 @@ class KeyboardLayout {
   final double x;
   final double width;
 
-  /// 세로 장면(800폭)에서 쓰던 건반 크기. 모든 내부 여백의 기준이 된다.
+  /// 세로 장면(800폭)에서 쓰던 건반 폭. 모든 내부 여백의 기준이 된다.
   static const double referenceWidth = 776;
-  static const double referenceHeight = 280;
 
   /// [referenceWidth] 대비 확대 배율. 테두리 여백까지 같이 키워야 건반 하나의
   /// 가로세로 비율이 유지된다.
   double get _scale => width / referenceWidth;
-
-  /// 주어진 폭에서 건반 비율([referenceWidth]:[referenceHeight])을 유지하는 높이.
-  static double heightForWidth(double width) =>
-      width * referenceHeight / referenceWidth;
-
-  /// 주어진 높이에서 건반 비율을 유지하는 폭.
-  static double widthForHeight(double height) =>
-      height * referenceWidth / referenceHeight;
 
   double get keyX => x + 8 * _scale;
   double get keyY => y + 24 * _scale;
@@ -41,10 +32,18 @@ class KeyboardLayout {
   /// [referenceWidth]에서는 기존과 같은 18이다.
   double get blackKeyOverhang => 18 * _scale;
 
-  Rect whiteKeyRect(int index) => Rect.fromLTWH(keyX + keyWidth * index, keyY, keyWidth, keyHeight);
-  Offset iconCenter(int index) => Offset(whiteKeyRect(index).center.dx, keyY + keyHeight * .57);
-  List<int> get blackAfter => count == 5 ? const [0, 1, 3] : const [0, 1, 3, 4, 5];
-  Rect blackKeyRect(int after) => Rect.fromLTWH(whiteKeyRect(after).right - blackKeyOverhang, keyY, blackKeyOverhang * 2, keyHeight * .47);
+  Rect whiteKeyRect(int index) =>
+      Rect.fromLTWH(keyX + keyWidth * index, keyY, keyWidth, keyHeight);
+  Offset iconCenter(int index) =>
+      Offset(whiteKeyRect(index).center.dx, keyY + keyHeight * .57);
+  List<int> get blackAfter =>
+      count == 5 ? const [0, 1, 3] : const [0, 1, 3, 4, 5];
+  Rect blackKeyRect(int after) => Rect.fromLTWH(
+    whiteKeyRect(after).right - blackKeyOverhang,
+    keyY,
+    blackKeyOverhang * 2,
+    keyHeight * .47,
+  );
 
   /// 흰 건반 [index]에서 검은 건반에 가리지 않는 가로 구간.
   ///
@@ -64,13 +63,23 @@ class KeyboardLayout {
   /// 건반 위쪽 절반 — 도형 자리.
   Rect shapeSlot(int index) {
     final open = whiteKeyOpenRect(index);
-    return Rect.fromLTRB(open.left, open.top, open.right, open.top + keyHeight / 2);
+    return Rect.fromLTRB(
+      open.left,
+      open.top,
+      open.right,
+      open.top + keyHeight / 2,
+    );
   }
 
   /// 건반 아래쪽 절반 — 계이름 자리.
   Rect labelSlot(int index) {
     final rect = whiteKeyRect(index);
-    return Rect.fromLTRB(rect.left, rect.top + keyHeight / 2, rect.right, rect.bottom);
+    return Rect.fromLTRB(
+      rect.left,
+      rect.top + keyHeight / 2,
+      rect.right,
+      rect.bottom,
+    );
   }
 
   int? hitWhiteKey(Offset point) {

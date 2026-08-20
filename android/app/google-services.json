@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "88743352145-a1qpgf8om3opfe3gdf8u17u14f62t8me.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cheesetabby.doremi",
+            "certificate_hash": "6a5792a8c6943b3b1af6e9f4d6d25223711f017c"
+          }
+        },
+        {
           "client_id": "88743352145-f5lsmcr7lvb1d4jo5peudsaknkv6u45h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -35,6 +43,14 @@
           "android_info": {
             "package_name": "com.cheesetabby.doremi",
             "certificate_hash": "ac002f0e963ee50384bd3d4943df368d315e9471"
+          }
+        },
+        {
+          "client_id": "88743352145-sltq84hojuu2m86ab96i3uv0otsk54ld.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cheesetabby.doremi",
+            "certificate_hash": "7b37b1dd0c38e977861f2c10e5a030f657191ae3"
           }
         },
         {

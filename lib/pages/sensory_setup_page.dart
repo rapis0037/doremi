@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants.dart';
+
 class SensoryChoice {
   const SensoryChoice({required this.sparklesOn, required this.voiceOn});
 
@@ -25,59 +27,69 @@ class SensorySetupPage extends StatelessWidget {
     body: SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              '너두! 도레미!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '아이에게 편안한 학습 방식을 골라보세요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 17),
-            ),
-            const SizedBox(height: 28),
-            const Text(
-              '선택지',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-            ),
-            const Divider(),
-            ..._choices.map(
-              (choice) => ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                title: Text(
-                  choice.label,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+        // 태블릿에서 선택지가 화면 폭만큼 늘어나지 않도록 가운데로 모은다.
+        // stretch 를 쓰므로 폭이 정해진 상자가 필요하다.
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: kFormMaxWidth),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '너두! 도레미!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                   ),
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    choice.description,
-                    style: const TextStyle(fontSize: 15),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '아이에게 편안한 학습 방식을 골라보세요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 17),
                   ),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => onSelected(
-                  SensoryChoice(
-                    sparklesOn: choice.sparklesOn,
-                    voiceOn: choice.voiceOn,
+                  const SizedBox(height: 28),
+                  const Text(
+                    '선택지',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                   ),
-                ),
+                  const Divider(),
+                  ..._choices.map(
+                    (choice) => ListTile(
+                      contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                      title: Text(
+                        choice.label,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          choice.description,
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => onSelected(
+                        SensoryChoice(
+                          sparklesOn: choice.sparklesOn,
+                          voiceOn: choice.voiceOn,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  const Text(
+                    '학습 중에도 음표 버튼에서 언제든 바꿀 수 있어요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xff687582)),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
-            const Text(
-              '학습 중에도 음표 버튼에서 언제든 바꿀 수 있어요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xff687582)),
-            ),
-          ],
+          ),
         ),
       ),
     ),
