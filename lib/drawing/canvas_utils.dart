@@ -15,9 +15,18 @@ void drawCenteredText(
   required double fontSize,
   required Color color,
   required FontWeight weight,
+  String? fontFamily,
 }) {
   final painter = TextPainter(
-    text: TextSpan(text: text, style: TextStyle(fontSize: fontSize, color: color, fontWeight: weight)),
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        fontSize: fontSize,
+        color: color,
+        fontWeight: weight,
+        fontFamily: fontFamily,
+      ),
+    ),
     textDirection: TextDirection.ltr,
     textAlign: TextAlign.center,
   )..layout();

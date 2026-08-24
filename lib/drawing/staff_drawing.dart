@@ -6,6 +6,12 @@ import 'effect_drawing.dart';
 /// 오선 한 칸 간격의 기준값. 세로 크기가 모두 여기에 비례한다.
 const double baseStaffGap = 28;
 
+/// Bravura Text 높은음자리표의 기준 크기.
+const double baseTrebleClefFontSize = 104;
+
+/// Bravura Text 글리프의 시각적 중심을 오선 중심에 맞추는 세로 보정값.
+const double baseTrebleClefYOffset = -9;
+
 void drawStaff(
   Canvas canvas, {
   required double y,
@@ -42,10 +48,15 @@ void drawStaff(
   drawCenteredText(
     canvas,
     '𝄞',
-    Offset(x + 64 * scale, y + gap * 2),
-    fontSize: 104 * scale,
+    Offset(
+      x + 64 * scale,
+      y + gap * 2 + baseTrebleClefYOffset * scale,
+    ),
+    fontSize: baseTrebleClefFontSize * scale,
     color: const Color(0xff353a3e),
     weight: FontWeight.w400,
+    // 𝄞를 시스템 대체 폰트에 맡기면 플랫폼마다 크기와 정렬이 달라진다.
+    fontFamily: 'BravuraText',
   );
   canvas.drawLine(
     Offset(x + width, y),

@@ -69,6 +69,7 @@ flutter:
   assets:
     - assets/notes/
     - assets/voice/
+    - assets/fonts/Bravura/LICENSE.txt
 
   fonts:
     - family: NanumGothic
@@ -77,6 +78,11 @@ flutter:
           weight: 400
         - asset: assets/fonts/NanumGothic/NanumGothic-Bold.otf
           weight: 700
+    # 음악 기호가 iOS와 Android에서 같은 모양과 비율로 렌더링되게 한다.
+    - family: BravuraText
+      fonts:
+        - asset: assets/fonts/Bravura/BravuraText.otf
+          weight: 400
 
 flutter_launcher_icons:
   android: true
