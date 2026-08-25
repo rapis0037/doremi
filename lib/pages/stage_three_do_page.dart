@@ -17,11 +17,15 @@ class StageThreeDoPage extends StatefulWidget {
     required this.noteIndex,
     required this.soundOn,
     required this.onSoundChanged,
+    required this.sparklesOn,
+    required this.onSparklesChanged,
     required this.onBack,
   });
   final int noteIndex;
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
+  final bool sparklesOn;
+  final ValueChanged<bool> onSparklesChanged;
   final VoidCallback onBack;
 
   @override
@@ -218,6 +222,8 @@ class _StageThreeDoPageState extends State<StageThreeDoPage>
       subtitle: '${_note.label} 도형을 ${_note.label} 건반으로 옮겨보세요',
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
+      sparklesOn: widget.sparklesOn,
+      onSparklesChanged: widget.onSparklesChanged,
       onBack: widget.onBack,
       headerHeight: wide ? 68 : StepCard.height,
       headerContentScale: wide ? 1 : 1.3,

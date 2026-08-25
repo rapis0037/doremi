@@ -298,10 +298,8 @@ class _LessonFlowPageState extends State<LessonFlowPage>
       subtitle: subtitle,
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
-      // AR 톡톡의 음정 소리 설정은 계이름 음성만 다룬다. 스파클은
-      // 일반 학습 설정에서 정한 값을 그대로 사용한다.
-      sparklesOn: widget.cameraMode ? null : widget.sparklesOn,
-      onSparklesChanged: widget.cameraMode ? null : widget.onSparklesChanged,
+      sparklesOn: widget.sparklesOn,
+      onSparklesChanged: widget.onSparklesChanged,
       onBack: _goBack,
       headerHeight: wide ? 68 : StepCard.height,
       headerContentScale: wide ? 1 : 1.3,

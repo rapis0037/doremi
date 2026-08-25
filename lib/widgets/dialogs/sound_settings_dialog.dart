@@ -47,7 +47,7 @@ Future<void> _showLearningSettings(
                     const SizedBox(width: 50),
                     const Expanded(
                       child: Text(
-                        '학습 설정',
+                        '음정 소리',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
@@ -65,7 +65,7 @@ Future<void> _showLearningSettings(
                 SwitchListTile.adaptive(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   title: const Text(
-                    '계이름 목소리',
+                    '계이름 음성',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   value: currentVoice,

@@ -395,6 +395,8 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
           StageThreeFlowPage(
             soundOn: _voiceOn,
             onSoundChanged: _setVoice,
+            sparklesOn: _sparklesOn,
+            onSparklesChanged: _setSparkles,
             onExit: () => _open(RootPage.home),
           ),
         );

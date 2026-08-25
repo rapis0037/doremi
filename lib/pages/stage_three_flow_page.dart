@@ -13,10 +13,14 @@ class StageThreeFlowPage extends StatefulWidget {
     super.key,
     required this.soundOn,
     required this.onSoundChanged,
+    required this.sparklesOn,
+    required this.onSparklesChanged,
     required this.onExit,
   });
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
+  final bool sparklesOn;
+  final ValueChanged<bool> onSparklesChanged;
   final VoidCallback onExit;
 
   @override
@@ -34,6 +38,8 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
         noteIndex: challengeNoteIndex,
         soundOn: widget.soundOn,
         onSoundChanged: widget.onSoundChanged,
+        sparklesOn: widget.sparklesOn,
+        onSparklesChanged: widget.onSparklesChanged,
         onBack: () => setState(() => _challengeNoteIndex = null),
       );
     }
@@ -46,6 +52,8 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
       subtitle: '연습할 음을 눌러 시작해요',
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
+      sparklesOn: widget.sparklesOn,
+      onSparklesChanged: widget.onSparklesChanged,
       onBack: widget.onExit,
       headerHeight: wide ? 68 : StepCard.height,
       headerContentScale: wide ? 1 : 1.3,

@@ -11,6 +11,7 @@ import 'package:doremi/layout/keyboard_layout.dart';
 import 'package:doremi/layout/lesson_scene.dart';
 import 'package:doremi/main.dart';
 import 'package:doremi/pages/lesson_flow_page.dart';
+import 'package:doremi/pages/stage_three_flow_page.dart';
 import 'package:doremi/widgets/app_background.dart';
 import 'package:doremi/widgets/app_header.dart';
 import 'package:doremi/widgets/mode_button.dart';
@@ -549,13 +550,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.music_note_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text('목소리'), findsOneWidget);
+    expect(find.text('계이름 음성'), findsOneWidget);
     expect(find.text('스파클 효과'), findsOneWidget);
     expect(find.byType(SwitchListTile), findsNWidgets(2));
     expect(find.byType(RadioListTile<int>), findsNothing);
   });
 
-  testWidgets('AR 톡톡 음정 소리 설정에는 스파클 토글이 없다', (tester) async {
+  testWidgets('AR 톡톡 음정 소리 설정에도 스파클 토글이 있다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: LessonFlowPage(
@@ -576,8 +577,29 @@ void main() {
 
     expect(find.text('음정 소리'), findsOneWidget);
     expect(find.text('계이름 음성'), findsOneWidget);
-    expect(find.text('스파클 효과'), findsNothing);
-    expect(find.byType(SwitchListTile), findsOneWidget);
+    expect(find.text('스파클 효과'), findsOneWidget);
+    expect(find.byType(SwitchListTile), findsNWidgets(2));
+  });
+
+  testWidgets('3단계 음정 소리 설정에도 두 토글이 있다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StageThreeFlowPage(
+          soundOn: true,
+          onSoundChanged: (_) {},
+          sparklesOn: true,
+          onSparklesChanged: (_) {},
+          onExit: () {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.music_note_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('계이름 음성'), findsOneWidget);
+    expect(find.text('스파클 효과'), findsOneWidget);
+    expect(find.byType(SwitchListTile), findsNWidgets(2));
   });
 
   testWidgets('태블릿에서 레터박스 없이 화면 폭을 모두 채운다', (tester) async {
