@@ -27,8 +27,13 @@ export interface Entitlement {
   accountToken: string | null;
 }
 
-export function grantsAccess(status: EntitlementStatus): boolean {
-  return status === "active" || status === "grace";
+export function grantsAccess(
+  status: EntitlementStatus,
+  expiresAt: number | null,
+  now = Date.now()
+): boolean {
+  const accessStatus = status === "active" || status === "grace";
+  return accessStatus && expiresAt !== null && expiresAt > now;
 }
 
 /**

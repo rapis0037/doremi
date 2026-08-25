@@ -36,7 +36,7 @@ class Entitlement {
     }
     // 서버 문서가 갱신되지 못했더라도 이미 만료된 권한은 열어 주지 않는다.
     final expiry = expiresAt;
-    return expiry == null || expiry.isAfter(DateTime.now());
+    return expiry != null && expiry.isAfter(DateTime.now());
   }
 
   factory Entitlement.fromMap(Map<String, dynamic>? data) {

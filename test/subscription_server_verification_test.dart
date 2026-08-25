@@ -25,7 +25,10 @@ void main() {
     return (controller: controller, backend: backend);
   }
 
-  const active = Entitlement(status: EntitlementStatus.active);
+  final active = Entitlement(
+    status: EntitlementStatus.active,
+    expiresAt: DateTime.now().add(const Duration(days: 30)),
+  );
 
   test('구매하면 영수증을 서버로 넘겨 확인받는다', () async {
     final store = FakeStore();
@@ -88,7 +91,12 @@ void main() {
     final built = buildWith(store);
     await built.controller.initialize();
 
-    built.backend.emit(const Entitlement(status: EntitlementStatus.grace));
+    built.backend.emit(
+      Entitlement(
+        status: EntitlementStatus.grace,
+        expiresAt: DateTime.now().add(const Duration(days: 3)),
+      ),
+    );
     await Future<void>.delayed(settle);
     expect(built.controller.isSubscribed, isTrue);
   });

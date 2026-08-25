@@ -11,6 +11,12 @@ void main() {
     expect(entitlement.grantsAccess, isFalse);
   });
 
+  test('활성 상태여도 만료 시각이 없으면 접근을 허용하지 않는다', () {
+    const entitlement = Entitlement(status: EntitlementStatus.active);
+
+    expect(entitlement.grantsAccess, isFalse);
+  });
+
   test('유예 상태이고 만료 시각이 남았으면 접근을 허용한다', () {
     final entitlement = Entitlement(
       status: EntitlementStatus.grace,

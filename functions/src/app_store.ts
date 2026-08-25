@@ -90,6 +90,14 @@ export async function verifyAppStorePurchase(
     throw new Error("영수증에 거래 번호가 없습니다.");
   }
 
+  return verifyAppStoreTransaction(transactionId, credentials);
+}
+
+/** 검증된 거래 번호로 현재 구독 상태를 다시 조회한다. */
+export async function verifyAppStoreTransaction(
+  transactionId: string,
+  credentials: AppStoreCredentials
+): Promise<Entitlement> {
   const token = createBearerToken(credentials);
   // 운영에서 못 찾으면 샌드박스(테스터 계정) 거래일 수 있다.
   let result = await fetchSubscriptionStatuses(
@@ -122,9 +130,15 @@ export async function verifyAppStorePurchase(
     throw new Error("구독 상품이 영수증에 없습니다.");
   }
 
-  const expiresAt =
+  const transactionExpiresAt =
     typeof info["expiresDate"] === "number" ? (info["expiresDate"] as number) : null;
   let status = toStatus(latest.status as number | undefined);
+  const renewalInfo = decodeJwsPayload(latest.signedRenewalInfo as string);
+  const graceExpiresAt =
+    typeof renewalInfo["gracePeriodExpiresDate"] === "number"
+      ? (renewalInfo["gracePeriodExpiresDate"] as number)
+      : null;
+  const expiresAt = status === "grace" ? graceExpiresAt : transactionExpiresAt;
   if (expiresAt !== null && expiresAt <= Date.now() && status === "active") {
     status = "expired";
   }
