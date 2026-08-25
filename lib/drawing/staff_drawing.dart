@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/models.dart';
 import 'canvas_utils.dart';
 import 'effect_drawing.dart';
 
@@ -67,15 +68,22 @@ void drawStaff(
   );
 }
 
-void drawChallengeScore(Canvas canvas, int active, bool done) {
+void drawChallengeScore(Canvas canvas, NoteSpec note, int active, bool done) {
   const y = 706.0;
   const gap = 28.0;
   drawStaff(canvas, y: y);
   const quarterX = [250.0, 340.0, 430.0, 520.0];
-  final cY = y + gap * 5;
+  final noteY = y + gap * 5 - note.pitchStep * gap / 2;
   for (var i = 0; i < quarterX.length; i++) {
     const color = Color(0xff30353a);
-    drawMusicNote(canvas, Offset(quarterX[i], cY), color, .9);
+    drawMusicNote(
+      canvas,
+      Offset(quarterX[i], noteY),
+      color,
+      .9,
+      stemDown: note.pitchStep >= 6,
+      showLedgerLine: note.pitchStep == 0,
+    );
   }
   canvas.drawLine(
     const Offset(600, y),
@@ -86,7 +94,7 @@ void drawChallengeScore(Canvas canvas, int active, bool done) {
   );
   const wholeColor = Color(0xff30353a);
   canvas.save();
-  canvas.translate(684, cY);
+  canvas.translate(684, noteY);
   canvas.rotate(-.24);
   canvas.drawOval(
     Rect.fromCenter(center: Offset.zero, width: 30, height: 20),
@@ -96,10 +104,10 @@ void drawChallengeScore(Canvas canvas, int active, bool done) {
       ..color = wholeColor,
   );
   canvas.restore();
-  for (final x in [...quarterX, 684.0]) {
+  if (note.pitchStep == 0) {
     canvas.drawLine(
-      Offset(x - 22, cY),
-      Offset(x + 22, cY),
+      Offset(684 - 22, noteY),
+      Offset(684 + 22, noteY),
       Paint()
         ..strokeWidth = 3
         ..color = const Color(0xff454b50),

@@ -55,7 +55,9 @@ class ChallengePainter extends CustomPainter {
       glowIndex: glow > 0 ? 0 : null,
       glow: glow,
     );
-    if (showScore) drawChallengeScore(canvas, activeNote, performanceDone);
+    if (showScore) {
+      drawChallengeScore(canvas, note, activeNote, performanceDone);
+    }
     if (chosen && !fixed) {
       canvas.drawCircle(
         heart,
