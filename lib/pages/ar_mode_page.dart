@@ -10,12 +10,16 @@ class ArModePage extends StatelessWidget {
     super.key,
     required this.soundOn,
     required this.onSoundChanged,
+    required this.sparklesOn,
+    required this.onSparklesChanged,
     required this.onBack,
     required this.onLite,
     required this.onSpace,
   });
   final bool soundOn;
   final ValueChanged<bool> onSoundChanged;
+  final bool sparklesOn;
+  final ValueChanged<bool> onSparklesChanged;
   final VoidCallback onBack;
   final VoidCallback onLite;
   final VoidCallback onSpace;
@@ -29,6 +33,8 @@ class ArModePage extends StatelessWidget {
       subtitle: '만나고 싶은 AR 방식을 골라보세요',
       soundOn: soundOn,
       onSoundChanged: onSoundChanged,
+      sparklesOn: sparklesOn,
+      onSparklesChanged: onSparklesChanged,
       onBack: onBack,
       headerHeight: wide ? 68 : StepCard.height,
       headerContentScale: wide ? 1 : 1.3,

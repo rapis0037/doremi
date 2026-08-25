@@ -162,7 +162,7 @@ Future<void> showMainSettings(
                   onTap: () => _showInfoDialog(
                     dialogContext,
                     title: '너두! 도레미!',
-                    body: '고양이와 함께 시작하는 음악 탐험\n앱 버전 1.0.0',
+                    body: '고양이와 함께 시작하는 음악 탐험\n앱 버전 1.0.2',
                   ),
                 ),
               ],
@@ -241,6 +241,7 @@ Future<void> showSubscriptionManagement(
                         style: const TextStyle(
                           fontSize: 21,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: -0.25,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -320,13 +321,14 @@ Future<void> showSubscriptionManagement(
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '구독은 월 단위로 자동 갱신되며 언제든지 스토어에서 취소할 수 있습니다.',
-                    textAlign: TextAlign.center,
+                  const _WordSafeText(
+                    '구독은 월 단위로 자동 갱신되며\n언제든지 스토어에서 취소할 수 있습니다.',
+                    alignment: WrapAlignment.center,
                     style: TextStyle(
                       fontSize: 12,
                       color: Color(0xff596775),
                       height: 1.4,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -429,15 +431,50 @@ class _SubscriptionNotice extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
-              Text(
+              _WordSafeText(
                 body,
-                style: const TextStyle(color: Color(0xff596775), height: 1.4),
+                style: const TextStyle(
+                  color: Color(0xff596775),
+                  height: 1.4,
+                  letterSpacing: -0.2,
+                ),
               ),
             ],
           ),
         ),
       ],
     ),
+  );
+}
+
+/// 각 단어를 별도 텍스트로 배치해 한글 음절 중간에서 줄이 갈라지지 않게 한다.
+class _WordSafeText extends StatelessWidget {
+  const _WordSafeText(
+    this.text, {
+    required this.style,
+    this.alignment = WrapAlignment.start,
+  });
+
+  final String text;
+  final TextStyle style;
+  final WrapAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: alignment == WrapAlignment.center
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start,
+    children: [
+      for (final line in text.split('\n'))
+        Wrap(
+          alignment: alignment,
+          spacing: 4,
+          children: [
+            for (final word in line.split(RegExp(r'\s+')))
+              if (word.isNotEmpty) Text(word, style: style),
+          ],
+        ),
+    ],
   );
 }
 

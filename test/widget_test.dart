@@ -10,6 +10,7 @@ import 'package:doremi/drawing/staff_drawing.dart';
 import 'package:doremi/layout/keyboard_layout.dart';
 import 'package:doremi/layout/lesson_scene.dart';
 import 'package:doremi/main.dart';
+import 'package:doremi/pages/lesson_flow_page.dart';
 import 'package:doremi/widgets/app_background.dart';
 import 'package:doremi/widgets/app_header.dart';
 import 'package:doremi/widgets/mode_button.dart';
@@ -176,6 +177,22 @@ void main() {
   });
 
   group('가로 화면 장면 전환', () {
+    test('연습 음에 따라 다섯 건반의 계이름 범위가 바뀐다', () {
+      const expectedFirstNotes = [0, 0, 0, 2, 2, 3, 3, 3];
+
+      for (final landscape in [false, true]) {
+        for (final note in notes) {
+          final scene = LessonScene.of(landscape: landscape, selected: note);
+          final expectedFirst = expectedFirstNotes[note.index];
+
+          expect(scene.keyboard.count, 5);
+          expect(scene.keyboard.firstNoteIndex, expectedFirst);
+          expect(scene.keyIndexFor(note), note.index - expectedFirst);
+          expect(scene.keyIndexFor(note), inInclusiveRange(0, 4));
+        }
+      }
+    });
+
     test('세로 장면은 기존 좌표계를 그대로 쓴다', () {
       final portrait = LessonScene.of(landscape: false, selected: null);
       expect(portrait.size, const Size(800, 920));
@@ -186,7 +203,8 @@ void main() {
       // 선택 후 건반 위치·개수도 예전 그대로.
       final selected = LessonScene.of(landscape: false, selected: notes[0]);
       expect(selected.size, LessonScene.portraitPracticeSize);
-      expect(selected.keyboard.y, 920);
+      expect(selected.staffY, 122);
+      expect(selected.keyboard.y, 890);
       expect(selected.keyboard.count, 5);
       expect(selected.noteTarget(notes[0]).dx, 420);
     });
@@ -271,7 +289,7 @@ void main() {
       }
     });
 
-    test('톡톡 Lite와 1단계가 완전히 같은 좌표계를 쓴다', () {
+    test('톡톡 Lite는 기존 건반 위치를 유지한다', () {
       for (final selected in [null, notes[0], notes[7]]) {
         final stageOne = LessonScene.of(landscape: false, selected: selected);
         final lite = LessonScene.of(
@@ -281,10 +299,18 @@ void main() {
         );
         expect(lite.size, stageOne.size);
         expect(lite.staffX, stageOne.staffX);
-        expect(lite.staffY, stageOne.staffY);
         expect(lite.staffWidth, stageOne.staffWidth);
         expect(lite.staffScale, stageOne.staffScale);
-        expect(lite.keyboardBox, stageOne.keyboardBox);
+        if (selected == null) {
+          expect(lite.staffY, stageOne.staffY);
+          expect(lite.keyboardBox, stageOne.keyboardBox);
+        } else {
+          expect(lite.keyboard.y, 920);
+          expect(stageOne.keyboard.y, 890);
+          expect(lite.staffY, 92);
+          expect(stageOne.staffY, 122);
+          expect(lite.keyboard.height, stageOne.keyboard.height);
+        }
       }
     });
 
@@ -294,7 +320,10 @@ void main() {
           final scene = LessonScene.of(landscape: landscape, selected: note);
           final start = scene.flightPoint(note, 0);
           final end = scene.flightPoint(note, 1);
-          expect(start, scene.keyboard.shapeSlot(note.index).center);
+          expect(
+            start,
+            scene.keyboard.shapeSlot(scene.keyIndexFor(note)).center,
+          );
           expect(end.dx, closeTo(scene.noteTarget(note).dx, 0.01));
           expect(end.dy, closeTo(scene.noteTarget(note).dy, 0.01));
         }
@@ -500,6 +529,18 @@ void main() {
     expect(modeSecondary.style?.fontSize, mainSecondary.style?.fontSize);
   });
 
+  testWidgets('2단계 방식 선택 화면 설정에 스파클 토글이 있다', (tester) async {
+    await pumpAppAt(tester, const Size(412, 915));
+    await tester.tap(find.byType(StepCard).at(1));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.music_note_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('스파클 효과'), findsOneWidget);
+    expect(find.byType(SwitchListTile), findsNWidgets(2));
+  });
+
   testWidgets('학습 화면 음표 설정에는 목소리와 스파클 토글만 있다', (tester) async {
     await pumpAppAt(tester, const Size(412, 915));
     await tester.tap(find.byType(StepCard).first);
@@ -512,6 +553,31 @@ void main() {
     expect(find.text('스파클 효과'), findsOneWidget);
     expect(find.byType(SwitchListTile), findsNWidgets(2));
     expect(find.byType(RadioListTile<int>), findsNothing);
+  });
+
+  testWidgets('AR 톡톡 음정 소리 설정에는 스파클 토글이 없다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LessonFlowPage(
+          cameraMode: true,
+          soundOn: true,
+          onSoundChanged: (_) {},
+          sparklesOn: true,
+          onSparklesChanged: (_) {},
+          onExit: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.music_note_rounded));
+    // 카메라 준비 인디케이터는 계속 애니메이션하므로 settle을 기다리지 않는다.
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('음정 소리'), findsOneWidget);
+    expect(find.text('계이름 음성'), findsOneWidget);
+    expect(find.text('스파클 효과'), findsNothing);
+    expect(find.byType(SwitchListTile), findsOneWidget);
   });
 
   testWidgets('태블릿에서 레터박스 없이 화면 폭을 모두 채운다', (tester) async {

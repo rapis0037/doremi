@@ -257,13 +257,15 @@ class _LessonFlowPageState extends State<LessonFlowPage>
     }
     if (selected == null) {
       final index = scene.keyboard.hitWhiteKey(point);
-      if (index != null) _choose(notes[index]);
+      if (index != null) {
+        _choose(notes[scene.keyboard.firstNoteIndex + index]);
+      }
       return;
     }
     if (flight.isAnimating || landed) return;
     // 도형만이 아니라 해당 음의 건반 전체가 탭 영역이다. 건반 선택 화면과
     // 같은 판정을 써서 검은 건반은 자연스럽게 제외된다.
-    if (scene.keyboard.hitWhiteKey(point) == selected!.index) {
+    if (scene.keyboard.hitWhiteKey(point) == scene.keyIndexFor(selected!)) {
       tone.playNote(selected!);
       flight.forward(from: 0);
     }
@@ -296,8 +298,10 @@ class _LessonFlowPageState extends State<LessonFlowPage>
       subtitle: subtitle,
       soundOn: widget.soundOn,
       onSoundChanged: widget.onSoundChanged,
-      sparklesOn: widget.sparklesOn,
-      onSparklesChanged: widget.onSparklesChanged,
+      // AR 톡톡의 음정 소리 설정은 계이름 음성만 다룬다. 스파클은
+      // 일반 학습 설정에서 정한 값을 그대로 사용한다.
+      sparklesOn: widget.cameraMode ? null : widget.sparklesOn,
+      onSparklesChanged: widget.cameraMode ? null : widget.onSparklesChanged,
       onBack: _goBack,
       headerHeight: wide ? 68 : StepCard.height,
       headerContentScale: wide ? 1 : 1.3,

@@ -25,7 +25,7 @@ const double kWelcomeMaxWidth = 520;
 /// 회원가입 단계와 감각 설정처럼 항목이 늘어서는 화면.
 const double kFormMaxWidth = 560;
 
-/// 높은 도는 따로 녹음된 음성이 없어 '도' 음성을 그대로 쓴다.
+/// 위의 도는 따로 녹음된 음성이 없어 '도' 음성을 그대로 쓴다.
 const notes = <NoteSpec>[
   NoteSpec(
     '도',
@@ -98,7 +98,7 @@ const notes = <NoteSpec>[
     voiceAsset: 'voice/high_tone_ti.wav',
   ),
   NoteSpec(
-    '높은 도',
+    '위의 도',
     523.25,
     Color(0xffe84d55),
     7,

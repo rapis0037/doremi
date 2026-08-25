@@ -5,12 +5,16 @@ class KeyboardLayout {
     required this.y,
     required this.height,
     required this.count,
+    this.firstNoteIndex = 0,
     this.x = 12,
     this.width = referenceWidth,
   });
   final double y;
   final double height;
   final int count;
+
+  /// 첫 번째 흰 건반이 전체 음 목록에서 가리키는 인덱스.
+  final int firstNoteIndex;
   final double x;
   final double width;
 
@@ -36,8 +40,10 @@ class KeyboardLayout {
       Rect.fromLTWH(keyX + keyWidth * index, keyY, keyWidth, keyHeight);
   Offset iconCenter(int index) =>
       Offset(whiteKeyRect(index).center.dx, keyY + keyHeight * .57);
-  List<int> get blackAfter =>
-      count == 5 ? const [0, 1, 3] : const [0, 1, 3, 4, 5];
+  List<int> get blackAfter => [
+    for (var i = 0; i < count - 1; i++)
+      if ({0, 1, 3, 4, 5}.contains((firstNoteIndex + i) % 7)) i,
+  ];
   Rect blackKeyRect(int after) => Rect.fromLTWH(
     whiteKeyRect(after).right - blackKeyOverhang,
     keyY,
@@ -83,7 +89,9 @@ class KeyboardLayout {
   }
 
   int? hitWhiteKey(Offset point) {
-    if (blackAfter.any((index) => blackKeyRect(index).contains(point))) return null;
+    if (blackAfter.any((index) => blackKeyRect(index).contains(point))) {
+      return null;
+    }
     for (var i = 0; i < count; i++) {
       if (whiteKeyRect(i).contains(point)) return i;
     }

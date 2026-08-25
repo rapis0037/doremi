@@ -29,8 +29,15 @@ class Entitlement {
   final DateTime? expiresAt;
 
   /// 결제 유예 기간에도 학습은 계속할 수 있어야 한다.
-  bool get grantsAccess =>
-      status == EntitlementStatus.active || status == EntitlementStatus.grace;
+  bool get grantsAccess {
+    if (status != EntitlementStatus.active &&
+        status != EntitlementStatus.grace) {
+      return false;
+    }
+    // 서버 문서가 갱신되지 못했더라도 이미 만료된 권한은 열어 주지 않는다.
+    final expiry = expiresAt;
+    return expiry == null || expiry.isAfter(DateTime.now());
+  }
 
   factory Entitlement.fromMap(Map<String, dynamic>? data) {
     if (data == null) return none;

@@ -57,7 +57,10 @@ class LessonPainter extends CustomPainter {
     drawKeyboard(
       canvas,
       keyboard,
-      noteList: notes.take(keyboard.count).toList(),
+      noteList: notes
+          .skip(keyboard.firstNoteIndex)
+          .take(keyboard.count)
+          .toList(),
       selectedOnly: selected,
       hideSelectedShape: isFlying || landed,
       splitLayout: true,
@@ -83,7 +86,9 @@ class LessonPainter extends CustomPainter {
         target,
         selected!.color,
         1.45 * scene.staffScale,
-        stemDown: selected!.index == 6,
+        // 오선의 가운데 줄(시)부터는 음표 대를 아래로 향하게 한다.
+        // 위의 도도 이 범위에 포함되어야 한다.
+        stemDown: selected!.index >= 6,
         showLedgerLine: selected!.index == 0,
       );
       if (burstProgress > 0 && burstProgress < 1) {

@@ -368,6 +368,8 @@ class _MusicLearningPageState extends State<MusicLearningPage> {
           ArModePage(
             soundOn: _voiceOn,
             onSoundChanged: _setVoice,
+            sparklesOn: _sparklesOn,
+            onSparklesChanged: _setSparkles,
             onBack: () => _open(RootPage.home),
             onLite: () => _open(RootPage.arLite),
             onSpace: () => _open(RootPage.arSpace),

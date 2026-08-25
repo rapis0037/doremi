@@ -16,10 +16,16 @@ const double _slotInset = 4;
 /// 건반마다 검은 건반에 가려지는 폭이 달라서, 그리는 건반들 중 가장 좁은
 /// 자리에 맞춰 하나의 크기로 통일한다. 그래야 건반마다 도형 크기가 들쭉날쭉
 /// 하지 않는다.
-double _sharedShapeSize(KeyboardLayout k, List<NoteSpec> noteList, NoteSpec? selectedOnly) {
+double _sharedShapeSize(
+  KeyboardLayout k,
+  List<NoteSpec> noteList,
+  NoteSpec? selectedOnly,
+) {
   var size = double.infinity;
   for (var i = 0; i < k.count; i++) {
-    if (selectedOnly != null && selectedOnly.index != i) continue;
+    if (selectedOnly != null && selectedOnly.index != noteList[i].index) {
+      continue;
+    }
     final slot = k.shapeSlot(i).deflate(_slotInset);
     final widthFactor = shapeWidthFactor(noteList[i].shape);
     size = math.min(size, math.min(slot.width / widthFactor, slot.height));
@@ -38,7 +44,9 @@ void drawKeyboard(
   double glow = 0,
   bool splitLayout = false,
 }) {
-  final sharedShapeSize = splitLayout ? _sharedShapeSize(k, noteList, selectedOnly) : 0.0;
+  final sharedShapeSize = splitLayout
+      ? _sharedShapeSize(k, noteList, selectedOnly)
+      : 0.0;
   final outer = RRect.fromRectAndRadius(
     Rect.fromLTWH(k.x, k.y, k.width, k.height),
     const Radius.circular(7),
@@ -70,20 +78,27 @@ void drawKeyboard(
         ..color = const Color(0xff6a7075),
     );
     final note = noteList[i];
-    final show = selectedOnly == null || selectedOnly.index == i;
+    final show = selectedOnly == null || selectedOnly.index == note.index;
     final drawShapeNow = show && !hideSelectedShape && labelsOnlyIndex == null;
-    final drawLabelNow = (labelsOnlyIndex == null && show) || labelsOnlyIndex == i;
+    final drawLabelNow =
+        (labelsOnlyIndex == null && show) || labelsOnlyIndex == i;
 
     if (splitLayout) {
       // 위쪽 절반은 도형, 아래쪽 절반은 계이름.
       if (drawShapeNow) {
-        drawShape(canvas, note.shape, k.shapeSlot(i).center, sharedShapeSize, note.color);
+        drawShape(
+          canvas,
+          note.shape,
+          k.shapeSlot(i).center,
+          sharedShapeSize,
+          note.color,
+        );
       }
       if (drawLabelNow) {
         final slot = k.labelSlot(i).deflate(_slotInset);
         drawFittedText(
           canvas,
-          // '높은 도'처럼 긴 계이름은 줄을 나눠야 글자를 키울 수 있다.
+          // '위의 도'처럼 긴 계이름은 줄을 나눠야 글자를 키울 수 있다.
           note.label.replaceAll(' ', '\n'),
           slot,
           maxFontSize: math.min(slot.height * .85, k.keyWidth * .7),
@@ -100,9 +115,10 @@ void drawKeyboard(
     if (drawLabelNow) {
       drawCenteredText(
         canvas,
-        note.label,
+        // 3단계 끌어놓기의 좁은 건반에서도 '위의 도'를 읽기 쉽게 두 줄로 표시한다.
+        note.index == 7 ? note.label.replaceAll(' ', '\n') : note.label,
         Offset(rect.center.dx, rect.bottom - 55),
-        fontSize: note.index == 7 ? 21 : 70,
+        fontSize: note.index == 7 ? 32 : 70,
         color: const Color(0xff34383c),
         weight: FontWeight.w900,
       );

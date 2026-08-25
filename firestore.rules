@@ -2,18 +2,48 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function guardianDataIsValid() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'authProvider', 'providerSubject', 'email', 'currentStep',
+          'createdAt', 'lastLoginAt', 'childAge', 'ageReferenceYear',
+          'childNickname', 'updatedAt', 'sensoryPreference',
+          'sparkleEnabled', 'solfegeVoiceEnabled', 'settingsSource',
+          'recommendationVersion', 'settingsUpdatedAt',
+          'onboardingCompletedAt'
+        ])
+        && (!('authProvider' in data) || data.authProvider is string)
+        && (!('providerSubject' in data) || data.providerSubject is string)
+        && (!('email' in data) || data.email == null || data.email is string)
+        && (!('currentStep' in data) || data.currentStep in [
+          'age', 'nickname', 'preference', 'confirmation', 'completed'
+        ])
+        && (!('childAge' in data) ||
+          (data.childAge is int && data.childAge >= 2 && data.childAge <= 20))
+        && (!('ageReferenceYear' in data) || data.ageReferenceYear is int)
+        && (!('childNickname' in data) ||
+          (data.childNickname is string && data.childNickname.size() >= 1 &&
+            data.childNickname.size() <= 12))
+        && (!('sparkleEnabled' in data) || data.sparkleEnabled is bool)
+        && (!('solfegeVoiceEnabled' in data) ||
+          data.solfegeVoiceEnabled is bool);
+    }
+
     match /guardians/{guardianId} {
-      allow read, create, update: if request.auth != null
-        && request.auth.uid == guardianId;
+      allow read: if isOwner(guardianId);
+      allow create, update: if isOwner(guardianId) && guardianDataIsValid();
       // 계정 삭제(탈퇴) 시 본인 문서만 지울 수 있다.
-      allow delete: if request.auth != null
-        && request.auth.uid == guardianId;
+      allow delete: if isOwner(guardianId);
     }
 
     // 구독 권한은 서버(Cloud Functions)가 스토어에 확인한 결과만 적는다.
     // 앱은 읽기만 할 수 있어, 앱을 고쳐도 유료 잠금을 열 수 없다.
     match /subscriptions/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if isOwner(uid);
       allow write: if false;
     }
 

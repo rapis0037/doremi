@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants.dart';
 import '../auth/auth_gateway.dart';
@@ -699,8 +700,24 @@ class _SignupScaffold extends StatelessWidget {
 class _LoginButtons extends StatelessWidget {
   const _LoginButtons({required this.busy, required this.onSignIn});
 
+  static final Uri _privacyPolicyUri = Uri.parse(
+    'https://rapis0037.github.io/john-yoon-app-policies/doremi-privacy-policy',
+  );
+
   final bool busy;
   final ValueChanged<SignInProvider> onSignIn;
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final opened = await launchUrl(
+      _privacyPolicyUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('개인정보처리방침을 열지 못했어요.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -756,10 +773,30 @@ class _LoginButtons extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         const SizedBox(height: 14),
-        const Text(
-          '계속하면 이용약관과 개인정보처리방침에\n동의하게 됩니다.',
+        Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: '계속하면 이용약관과 '),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: GestureDetector(
+                  onTap: () => _openPrivacyPolicy(context),
+                  child: const Text(
+                    '개인정보처리방침',
+                    style: TextStyle(
+                      color: Color(0xff3f67a8),
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+              const TextSpan(text: '에\n동의하게 됩니다.'),
+            ],
+          ),
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xff687582), height: 1.45),
+          style: const TextStyle(color: Color(0xff687582), height: 1.45),
         ),
       ],
     );

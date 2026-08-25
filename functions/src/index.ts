@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { defineSecret } from "firebase-functions/params";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 
@@ -21,6 +22,7 @@ const appStoreIssuerId = defineSecret("APP_STORE_ISSUER_ID");
 const appStorePrivateKey = defineSecret("APP_STORE_PRIVATE_KEY");
 
 const REGION = "asia-northeast3";
+const MAX_RECEIPT_LENGTH = 64 * 1024;
 
 /**
  * 앱이 결제·복원으로 받은 영수증을 스토어에 다시 물어 확인하고,
@@ -46,8 +48,12 @@ export const verifyPurchase = onCall(
     if (productId !== PREMIUM_MONTHLY_PRODUCT_ID) {
       throw new HttpsError("invalid-argument", "알 수 없는 상품입니다.");
     }
-    if (typeof receipt !== "string" || receipt.length === 0) {
-      throw new HttpsError("invalid-argument", "영수증이 비어 있습니다.");
+    if (
+      typeof receipt !== "string" ||
+      receipt.length === 0 ||
+      receipt.length > MAX_RECEIPT_LENGTH
+    ) {
+      throw new HttpsError("invalid-argument", "영수증 형식이 올바르지 않습니다.");
     }
 
     let entitlement: Entitlement;
@@ -75,7 +81,7 @@ export const verifyPurchase = onCall(
       throw new HttpsError("permission-denied", "다른 계정의 구매입니다.");
     }
 
-    await claimReceipt(uid, receipt, platform);
+    await claimReceipt(uid, receipt, entitlement);
     await writeEntitlement(uid, entitlement);
 
     return {
@@ -93,11 +99,17 @@ export const verifyPurchase = onCall(
 async function claimReceipt(
   uid: string,
   receipt: string,
-  platform: string
+  entitlement: Entitlement
 ): Promise<void> {
+  // App Store의 originalTransactionId는 갱신되어도 유지된다. 제출된 JWS
+  // 원문만 해시하면 같은 구독의 다른 표현을 별개 구매로 오인할 수 있다.
+  const ownershipKey =
+    entitlement.platform === "ios" && entitlement.latestOrderId !== null
+      ? `ios:${entitlement.latestOrderId}`
+      : `${entitlement.platform}:${receipt}`;
   const reference = getFirestore()
     .collection("purchaseReceipts")
-    .doc(receiptFingerprint(receipt));
+    .doc(receiptFingerprint(ownershipKey));
 
   await getFirestore().runTransaction(async (transaction) => {
     const snapshot = await transaction.get(reference);
@@ -108,7 +120,8 @@ async function claimReceipt(
     if (owner === undefined) {
       transaction.set(reference, {
         uid,
-        platform,
+        platform: entitlement.platform,
+        originalTransactionId: entitlement.latestOrderId,
         claimedAt: FieldValue.serverTimestamp(),
       });
     }
@@ -119,6 +132,10 @@ async function writeEntitlement(
   uid: string,
   entitlement: Entitlement
 ): Promise<void> {
+  const nextCheckAt =
+    grantsAccess(entitlement.status) && entitlement.expiresAt !== null
+      ? entitlement.expiresAt
+      : FieldValue.delete();
   await getFirestore()
     .collection("subscriptions")
     .doc(uid)
@@ -129,9 +146,50 @@ async function writeEntitlement(
         productId: entitlement.productId,
         platform: entitlement.platform,
         expiresAt: entitlement.expiresAt,
+        nextCheckAt,
         latestOrderId: entitlement.latestOrderId,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
 }
+
+/**
+ * 앱이 실행되지 않아도 만료 시각이 지난 권한을 닫는다. 갱신된 사용자는 앱의
+ * StoreKit 복원 결과가 다시 검증되면서 새 만료 시각으로 갱신된다.
+ */
+export const expireSubscriptions = onSchedule(
+  {
+    region: REGION,
+    schedule: "every 30 minutes",
+    timeZone: "Asia/Seoul",
+  },
+  async () => {
+    const firestore = getFirestore();
+    const now = Date.now();
+
+    while (true) {
+      const snapshot = await firestore
+        .collection("subscriptions")
+        .where("nextCheckAt", "<=", now)
+        .limit(400)
+        .get();
+      if (snapshot.empty) return;
+
+      const batch = firestore.batch();
+      for (const document of snapshot.docs) {
+        batch.set(
+          document.ref,
+          {
+            status: "expired",
+            active: false,
+            nextCheckAt: FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
+      await batch.commit();
+    }
+  }
+);

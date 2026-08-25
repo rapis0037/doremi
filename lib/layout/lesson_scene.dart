@@ -96,28 +96,41 @@ class LessonScene {
     bool cameraMode = false,
   }) => landscape
       ? LessonScene._landscape(selected: selected)
-      : LessonScene._portrait(selected: selected);
+      : LessonScene._portrait(selected: selected, cameraMode: cameraMode);
 
-  static int _keyCount(NoteSpec? selected) =>
-      selected != null && selected.index < 5 ? 5 : 8;
+  static int _keyCount(NoteSpec? selected) => selected == null ? 8 : 5;
 
-  static LessonScene _portrait({required NoteSpec? selected}) {
+  /// 연습 건반에 처음 표시할 음의 인덱스.
+  ///
+  /// 도·레·미는 도레미파솔, 파·솔은 미파솔라시,
+  /// 라·시·위의 도는 파솔라시위의 도 범위로 보여 준다.
+  static int _firstNoteIndex(NoteSpec? selected) {
+    if (selected == null || selected.index <= 2) return 0;
+    if (selected.index <= 4) return 2;
+    return 3;
+  }
+
+  static LessonScene _portrait({
+    required NoteSpec? selected,
+    required bool cameraMode,
+  }) {
     final picking = selected == null;
     final canvas = picking ? portraitSize : portraitPracticeSize;
     return LessonScene._(
       size: canvas,
       staffX: 62,
-      // 음정 연습 오선지는 상단 여백을 확보해 음자리표 윗부분이 잘리지 않게 한다.
-      staffY: 92,
+      // 1·2단계 연습 오선지는 건반 쪽으로 살짝 내려 시각적인 간격을 맞춘다.
+      // 선택 화면과 톡톡 Lite는 기존 위치를 유지한다.
+      staffY: !picking && !cameraMode ? 122 : 92,
       staffWidth: portraitStaffWidth,
       staffScale: staffZoom,
       keyboard: KeyboardLayout(
-        // Lite 초기 화면도 악보 아래에 건반을 배치한다.
-        // 선택 화면은 기존 크기를 유지하고, 연습 화면은 세로로 키워 장면 하단에 붙인다.
-        // 일반 연습과 톡톡 Lite 연습은 같은 건반 크기와 위치를 사용한다.
-        y: picking ? 320 : 920,
+        // 선택 화면과 톡톡 Lite는 기존 위치를 유지하고, 1·2단계 연습 건반만
+        // 하단에서 살짝 띄워 다른 UI와 시각적인 여유를 준다.
+        y: picking ? 320 : (cameraMode ? 920 : 890),
         height: picking ? pickingKeyboardHeight : practiceKeyboardHeight,
         count: _keyCount(selected),
+        firstNoteIndex: _firstNoteIndex(selected),
       ),
       popupCenter: Offset(canvas.width / 2, canvas.height / 2),
       popupRadius: _popupRadiusFor(canvas),
@@ -133,6 +146,7 @@ class LessonScene {
     required Rect box,
     required Size reference,
     required int count,
+    required int firstNoteIndex,
   }) {
     final scale = math.min(
       box.width / reference.width,
@@ -146,6 +160,7 @@ class LessonScene {
       width: width,
       height: height,
       count: count,
+      firstNoteIndex: firstNoteIndex,
     );
   }
 
@@ -189,6 +204,7 @@ class LessonScene {
           picking ? pickingKeyboardHeight : practiceKeyboardHeight,
         ),
         count: _keyCount(selected),
+        firstNoteIndex: _firstNoteIndex(selected),
       ),
       popupCenter: const Offset(landscapeWidth / 2, landscapeHeight / 2),
       popupRadius: _popupRadiusFor(landscapeSize),
@@ -207,12 +223,15 @@ class LessonScene {
     size.height * .136 * math.sin(t * math.pi * 2),
   );
 
+  /// 전체 음 목록의 인덱스를 현재 보이는 5개 건반의 로컬 인덱스로 바꾼다.
+  int keyIndexFor(NoteSpec note) => note.index - keyboard.firstNoteIndex;
+
   /// 도형이 건반에서 악보까지 날아가는 경로.
   ///
   /// 흔들림 폭을 미리 한 번만 맞춰 두므로, 꼬리를 그리느라 여러 시점을 되짚어도
   /// 매번 다시 계산하지 않는다.
   FlightPath flightPathFor(NoteSpec note) => FlightPath._(
-    start: keyboard.shapeSlot(note.index).center,
+    start: keyboard.shapeSlot(keyIndexFor(note)).center,
     end: noteTarget(note),
     wiggle: flightWiggle,
     canvas: size,
@@ -224,7 +243,7 @@ class LessonScene {
 
 /// 도형이 악보로 날아가는 궤적.
 ///
-/// 흔들림을 그대로 더하면 가장자리 건반(높은 도)에서 도형이 캔버스 밖으로
+/// 흔들림을 그대로 더하면 가장자리 건반(위의 도)에서 도형이 캔버스 밖으로
 /// 튀어나가 잘린다. 만들 때 전체 궤적을 한 번 훑어, 넘치는 만큼만 흔들림
 /// 폭을 줄여 둔다.
 class FlightPath {

@@ -101,8 +101,13 @@ class HomePage extends StatelessWidget {
                     contentScale: wide ? 1 : 1.3,
                     contentOffsetY: 60,
                   ),
-                  if (subscription != null)
+                  if (subscription != null && !subscription!.isSubscribed) ...[
+                    // 홈 헤더 내용은 시각적 중심을 맞추려고 아래로 이동되어
+                    // SizedBox 경계를 넘어온다. 배너가 바로 이어지면 부제목을
+                    // 덮으므로 실제 콘텐츠가 끝나는 만큼 자리를 확보한다.
+                    const SizedBox(height: 44),
                     _SubscriptionStatusBanner(subscription: subscription!),
+                  ],
                   Expanded(child: wide ? _buildWide() : _buildTall()),
                 ],
               );
@@ -117,21 +122,27 @@ class HomePage extends StatelessWidget {
   Widget _buildTall() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kCardMaxWidth),
-          child: Column(
-            children: [
-              // 작은 화면에서도 3단계 카드 하단이 잘리지 않도록 콘텐츠 묶음을
-              // 기존 위치보다 위로 당긴다.
-              const SizedBox(height: 68),
-              const SizedBox(
-                height: 190,
-                child: Center(child: CatFace(width: 198)),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Center(
+          // 무료 이용 배너나 안전 영역 때문에 본문 높이가 줄어들어도 고양이와
+          // 세 단계 카드를 한 묶음으로 축소해, 스크롤 없이 전부 보여 준다.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: constraints.maxWidth.clamp(0, kCardMaxWidth).toDouble(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 68),
+                  const SizedBox(
+                    height: 190,
+                    child: Center(child: CatFace(width: 198)),
+                  ),
+                  const SizedBox(height: StepCard.gap),
+                  ..._stepCards(),
+                ],
               ),
-              const SizedBox(height: StepCard.gap),
-              ..._stepCards(),
-            ],
+            ),
           ),
         ),
       ),
@@ -206,7 +217,7 @@ class _SubscriptionStatusBanner extends StatelessWidget {
   }
 }
 
-/// 공간이 남으면 가운데 정렬하고, 모자라면 스크롤되는 컨테이너.
+/// 가로 화면에서 공간이 남으면 가운데 정렬하고, 모자라면 스크롤되는 컨테이너.
 class _VerticallyCenteredScroll extends StatelessWidget {
   const _VerticallyCenteredScroll({required this.child});
   final Widget child;
