@@ -115,7 +115,7 @@ class HomePage extends StatelessWidget {
 
   //고양이 대가리 크기 조절 및 위치조절
   Widget _buildTall() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Center(
         child: ConstrainedBox(

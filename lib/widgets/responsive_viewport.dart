@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 /// 현재 UI가 설계된 기준 화면의 짧은 변(dp). 일반적인 폰 세로 폭.
 const double kReferenceShortSide = 412;
 
+/// 한 화면에 모든 콘텐츠가 들어가는 기준 화면의 긴 변(dp).
+const double kReferenceLongSide = 915;
+
 /// 기준보다 큰 화면에서의 확대 강도. 1이면 화면 크기에 정비례, 0이면 확대하지 않음.
 const double _upscaleDamping = 0.8;
 
@@ -18,8 +21,13 @@ const double _maxScale = 2.0;
 ///   여백이 아니라 논리 크기(= 레이아웃이 쓸 수 있는 dp)로 돌려준다.
 double responsiveScaleFor(Size size) {
   final short = size.shortestSide;
-  if (short <= 0) return 1;
-  final raw = short / kReferenceShortSide;
+  final long = size.longestSide;
+  if (short <= 0 || long <= 0) return 1;
+
+  // 짧은 변만 보면 정사각형에 가까운 태블릿에서 UI가 지나치게 커져,
+  // 긴 변 방향의 콘텐츠가 화면 밖으로 밀려난다. 두 축 중 더 제한적인
+  // 배율을 선택해 기준 캔버스 전체가 항상 화면 안에 들어오게 한다.
+  final raw = math.min(short / kReferenceShortSide, long / kReferenceLongSide);
   if (raw <= 1) return raw;
   return math.min(math.pow(raw, _upscaleDamping).toDouble(), _maxScale);
 }

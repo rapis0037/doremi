@@ -36,17 +36,17 @@ void main() {
       expect(responsiveScaleFor(const Size(412, 915)), closeTo(1.0, 1e-9));
     });
 
-    test('기준보다 좁은 화면은 폭에 정비례해 축소', () {
+    test('기준보다 좁고 짧은 화면은 더 제한적인 축에 맞춰 축소', () {
       expect(
         responsiveScaleFor(const Size(360, 640)),
-        closeTo(360 / 412, 1e-9),
+        closeTo(640 / kReferenceLongSide, 1e-9),
       );
     });
 
     test('태블릿은 확대되지만 화면 배율보다는 완만하게', () {
       const raw = 800 / kReferenceShortSide;
       final scale = responsiveScaleFor(const Size(800, 1280));
-      expect(scale, greaterThan(1.4));
+      expect(scale, greaterThan(1.2));
       expect(scale, lessThan(raw));
     });
 
@@ -62,6 +62,22 @@ void main() {
         responsiveScaleFor(const Size(800, 1280)),
         closeTo(responsiveScaleFor(const Size(1280, 800)), 1e-9),
       );
+    });
+
+    test('모든 화면비에서 기준 캔버스가 논리 화면 안에 들어간다', () {
+      for (final size in [
+        const Size(768, 1024), // iPad 4:3
+        const Size(834, 1194), // iPad Pro 11
+        const Size(1024, 1366), // iPad Pro 12.9
+        const Size(800, 1280), // Android 16:10
+        const Size(1600, 2560), // Android 고해상도 16:10
+        const Size(1280, 800), // 가로 16:10
+      ]) {
+        final scale = responsiveScaleFor(size);
+        final logical = size / scale;
+        expect(logical.shortestSide, greaterThanOrEqualTo(kReferenceShortSide));
+        expect(logical.longestSide, greaterThanOrEqualTo(kReferenceLongSide));
+      }
     });
   });
 
@@ -437,6 +453,26 @@ void main() {
       final thirdCard = tester.getRect(find.byType(StepCard).last);
       expect(thirdCard.bottom, lessThanOrEqualTo(915));
     });
+
+    for (final screen in [
+      const Size(768, 1024),
+      const Size(834, 1194),
+      const Size(1024, 1366),
+      const Size(800, 1280),
+      const Size(1280, 800),
+    ]) {
+      testWidgets('$screen 홈의 모든 요소가 스크롤 없이 화면 안에 보인다', (tester) async {
+        await pumpAppAt(tester, screen);
+
+        for (final card in tester.widgetList<StepCard>(find.byType(StepCard))) {
+          final rect = tester.getRect(find.byWidget(card));
+          expect(rect.left, greaterThanOrEqualTo(0));
+          expect(rect.top, greaterThanOrEqualTo(0));
+          expect(rect.right, lessThanOrEqualTo(screen.width));
+          expect(rect.bottom, lessThanOrEqualTo(screen.height));
+        }
+      });
+    }
   });
 
   testWidgets('홈 화면이 렌더링된다', (tester) async {
