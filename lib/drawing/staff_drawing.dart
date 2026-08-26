@@ -10,8 +10,14 @@ const double baseStaffGap = 28;
 /// Bravura Text 높은음자리표의 기준 크기.
 const double baseTrebleClefFontSize = 104;
 
-/// Bravura Text 글리프의 시각적 중심을 오선 중심에 맞추는 세로 보정값.
-const double baseTrebleClefYOffset = -9;
+/// Bravura Text 글리프의 G 나선 중심을 G선에 맞추는 세로 보정값.
+const double baseTrebleClefYOffset = -23;
+
+/// Bravura Text의 텍스트 중심. 글리프 안의 G 나선은 이 기준에서
+/// 한 칸 아래에 있으므로, 오선의 가운데선에 중심을 두어야 나선이
+/// 아래에서 두 번째 선(G선)을 감싼다.
+double trebleClefTextCenterY(double staffTop, double scale) =>
+    staffTop + baseStaffGap * 2 * scale;
 
 void drawStaff(
   Canvas canvas, {
@@ -51,7 +57,7 @@ void drawStaff(
     '𝄞',
     Offset(
       x + 64 * scale,
-      y + gap * 2 + baseTrebleClefYOffset * scale,
+      trebleClefTextCenterY(y, scale) + baseTrebleClefYOffset * scale,
     ),
     fontSize: baseTrebleClefFontSize * scale,
     color: const Color(0xff353a3e),

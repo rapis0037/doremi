@@ -178,6 +178,11 @@ void main() {
   });
 
   group('가로 화면 장면 전환', () {
+    test('높은음자리표 텍스트 중심은 오선 가운데선에 둔다', () {
+      expect(trebleClefTextCenterY(100, 1), 100 + baseStaffGap * 2);
+      expect(trebleClefTextCenterY(100, 1.8), 100 + baseStaffGap * 2 * 1.8);
+    });
+
     test('연습 음에 따라 다섯 건반의 계이름 범위가 바뀐다', () {
       const expectedFirstNotes = [0, 0, 0, 2, 2, 3, 3, 3];
 
