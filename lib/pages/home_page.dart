@@ -99,7 +99,7 @@ class HomePage extends StatelessWidget {
                     // 가로는 화면이 낮아 그대로 두면 본문이 눌린다.
                     height: wide ? AppHeader.defaultHeight : StepCard.height,
                     contentScale: wide ? 1 : 1.3,
-                    contentOffsetY: 60,
+                    contentOffsetY: wide ? 0 : 60,
                   ),
                   if (subscription != null && !subscription!.isSubscribed) ...[
                     // 홈 헤더 내용은 시각적 중심을 맞추려고 아래로 이동되어
@@ -165,12 +165,19 @@ class HomePage extends StatelessWidget {
           const SizedBox(width: 20),
           Expanded(
             flex: 6,
-            child: _VerticallyCenteredScroll(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: kCardMaxWidth),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _stepCards(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: constraints.maxWidth
+                        .clamp(0, kCardMaxWidth)
+                        .toDouble(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _stepCards(),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -211,24 +218,6 @@ class _SubscriptionStatusBanner extends StatelessWidget {
           text,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-        ),
-      ),
-    );
-  }
-}
-
-/// 가로 화면에서 공간이 남으면 가운데 정렬하고, 모자라면 스크롤되는 컨테이너.
-class _VerticallyCenteredScroll extends StatelessWidget {
-  const _VerticallyCenteredScroll({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Center(child: child),
         ),
       ),
     );

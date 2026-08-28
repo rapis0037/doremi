@@ -6,12 +6,13 @@ import '../drawing/keyboard_drawing.dart';
 import '../layout/keyboard_layout.dart';
 
 class SelectionPainter extends CustomPainter {
-  const SelectionPainter({required this.keyboard});
+  const SelectionPainter({required this.keyboard, this.scene = sceneSize});
   final KeyboardLayout keyboard;
+  final Size scene;
 
   @override
   void paint(Canvas canvas, Size size) {
-    scaleScene(canvas, size);
+    scaleScene(canvas, size, scene);
     drawKeyboard(
       canvas,
       keyboard,

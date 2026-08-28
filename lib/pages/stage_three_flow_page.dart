@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants.dart';
-import '../layout/keyboard_layout.dart';
+import '../layout/lesson_scene.dart';
 import '../painters/selection_painter.dart';
 import '../widgets/scene_view.dart';
 import '../widgets/stage_shell.dart';
@@ -45,8 +45,9 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
     }
     final screenSize = MediaQuery.sizeOf(context);
     final wide = screenSize.width > screenSize.height;
-    // 1·2단계의 음 선택 화면과 같은 건반 크기를 사용한다.
-    final keyboard = KeyboardLayout(y: 320, height: 350, count: 8);
+    // 1단계와 동일한 화면 방향별 장면을 써서 건반 크기를 맞춘다.
+    final scene = LessonScene.of(landscape: wide, selected: null);
+    final keyboard = scene.keyboard;
     return StageShell(
       title: '음정 챌린지!',
       subtitle: '연습할 음을 눌러 시작해요',
@@ -60,6 +61,7 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
       headerContentOffsetY: wide ? 0 : 150,
       child: Center(
         child: SceneView(
+          scene: scene.size,
           onTap: (point) {
             final index = keyboard.hitWhiteKey(point);
             if (index != null && index < notes.length) {
@@ -70,7 +72,7 @@ class _StageThreeFlowPageState extends State<StageThreeFlowPage> {
               ).showSnackBar(const SnackBar(content: Text('음 도형을 눌러보세요')));
             }
           },
-          painter: SelectionPainter(keyboard: keyboard),
+          painter: SelectionPainter(keyboard: keyboard, scene: scene.size),
         ),
       ),
     );
